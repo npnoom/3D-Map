@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#14211a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%2314211a'/%3E%3Ccircle cx='32' cy='32' r='21' fill='none' stroke='%23fbbf24' stroke-width='4'/%3E%3Ccircle cx='32' cy='32' r='11' fill='none' stroke='%23fbbf24' stroke-width='3'/%3E%3Ccircle cx='32' cy='32' r='3' fill='%23fbbf24'/%3E%3C/svg%3E">
+<title>แผนที่สถานการณ์ 3D</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<style>
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0;background:#0d1510;font-family:system-ui,"Noto Sans Thai",sans-serif}
+#map{position:absolute;inset:0}
+.top{position:absolute;top:0;left:0;right:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 6px) 10px 6px;background:rgba(20,33,26,.88);color:#f3f4f6;font-size:13px}
+.top em{font-style:normal;color:#fbbf24;margin-left:6px}
+.panel{position:absolute;left:0;right:0;bottom:0;z-index:5;max-height:46vh;overflow:auto;padding:8px 10px calc(env(safe-area-inset-bottom,0px) + 8px);background:rgba(20,33,26,.94);color:#e5e7eb;border-radius:14px 14px 0 0;font-size:13px}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:6px 0}
+button,select,input{font:inherit}
+button,select{background:#24382c;color:#fff;border:1px solid #3d5c48;border-radius:8px;padding:8px 10px}
+button.on{background:#1d4ed8;border-color:#93c5fd}
+button.warn{background:#7f1d1d;border-color:#b91c1c}
+input[type=number]{width:64px;padding:6px;border-radius:6px;border:1px solid #3d5c48;background:#0d1510;color:#fff}
+#info{white-space:pre-line;line-height:1.55;color:#d1fae5;min-height:2.6em}
+.mk{display:flex;align-items:center;justify-content:center;width:36px;height:26px;border:2px solid #fff;color:#fff;font:700 11px system-ui,sans-serif;box-shadow:0 1px 5px #000a}
+.mk.sel{outline:3px solid #fbbf24}
+.mk.own{background:#2563eb}
+.mk.gun{background:#15803d;border-radius:50%;width:34px;height:34px}
+.mk.op{background:#0284c7}
+.mk.enemy{background:#dc2626;transform:rotate(45deg);width:28px;height:28px}
+.mk.enemy span{transform:rotate(-45deg)}
+.mk.tgt{background:#ea580c;border-radius:50%;width:34px;height:34px}
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div class="top"><span>แผนที่สถานการณ์ 3D<em>ต้นแบบ ห้ามใส่ข้อมูลจริง</em></span><button id="tg">เมนู</button></div>
+<div class="panel" id="panel">
+  <div class="row" id="types"></div>
+  <div class="row">
+    <span>ระยะยิงต่ำสุด</span><input id="rmin" type="number" min="0" step="0.5" value="1">
+    <span>สูงสุด</span><input id="rmax" type="number" min="0" step="0.5" value="10"><span>กม. (ตัวอย่าง)</span>
+  </div>
+  <div class="row">
+    <span>ภูมิประเทศ</span><input id="ex" type="range" min="1" max="3" step="0.1" value="1.3">
+    <select id="bm"><option value="osm">แผนที่ถนน</option><option value="sat">ดาวเทียม</option></select>
+  </div>
+  <div class="row">
+    <button id="los">ตรวจแนวสายตา</button>
+    <button id="del" class="warn">ลบที่เลือก</button>
+    <button id="clr" class="warn">ล้างทั้งหมด</button>
+  </div>
+  <div id="info">แตะปุ่มประเภท แล้วแตะแผนที่เพื่อวางสัญลักษณ์ แตะสัญลักษณ์เพื่อเลือก (เลือกได้ 2 จุด) ลากเพื่อย้าย</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script>
+const T={own:['FRN','ฝ่ายเรา'],gun:['GUN','ที่ตั้งยิง'],op:['OP','ที่ตรวจการณ์'],enemy:['ENY','ข้าศึก'],tgt:['TGT','เป้าหมาย']};
+const $=id=>document.getElementById(id);
+let items=[],sel=[],mode=null,seq=0,ex=1.3;
+
+const map=new maplibregl.Map({
+  container:'map',center:[101.37,14.44],zoom:12,pitch:65,bearing:20,maxPitch:80,
+  attributionControl:{compact:true},
+  style:{version:8,sources:{
+    osm:{type:'raster',tiles:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],tileSize:256,maxzoom:19,attribution:'© OpenStreetMap contributors'},
+    sat:{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],tileSize:256,maxzoom:18,attribution:'Imagery © Esri'},
+    dem:{type:'raster-dem',tiles:['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],encoding:'terrarium',tileSize:256,maxzoom:15,attribution:'Terrain: Mapzen / AWS'}},
+    layers:[
+      {id:'osm',type:'raster',source:'osm'},
+      {id:'sat',type:'raster',source:'sat',layout:{visibility:'none'}},
+      {id:'hill',type:'hillshade',source:'dem',paint:{'hillshade-exaggeration':0.3}}]}
+});
+map.addControl(new maplibregl.NavigationControl({visualizePitch:true}),'top-right');
+map.addControl(new maplibregl.ScaleControl({unit:'metric'}),'bottom-left');
+
+const empty={type:'FeatureCollection',features:[]};
+map.on('load',()=>{
+  map.setTerrain({source:'dem',exaggeration:ex});
+  map.addSource('rings',{type:'geojson',data:empty});
+  map.addSource('los',{type:'geojson',data:empty});
+  map.addLayer({id:'ring-max',type:'line',source:'rings',filter:['==',['get','k'],'max'],paint:{'line-color':'#f59e0b','line-width':2.5}});
+  map.addLayer({id:'ring-min',type:'line',source:'rings',filter:['==',['get','k'],'min'],paint:{'line-color':'#fde68a','line-width':2,'line-dasharray':[2,2]}});
+  map.addLayer({id:'los',type:'line',source:'los',paint:{'line-color':['case',['get','ok'],'#22c55e','#ef4444'],'line-width':4}});
+  try{JSON.parse(localStorage.getItem('items')||'[]').forEach(o=>add(o.t,o.p[0],o.p[1]))}catch(e){}
+});
+
+// ---------- helpers ----------
+const rad=d=>d*Math.PI/180,deg=r=>r*180/Math.PI;
+function dist(a,b){const R=6371,dl=rad(b.lat-a.lat),dn=rad(b.lng-a.lng);
+  const x=Math.sin(dl/2)**2+Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(dn/2)**2;
+  return 2*R*Math.asin(Math.sqrt(x));}
+function brg(a,b){const dn=rad(b.lng-a.lng),y=Math.sin(dn)*Math.cos(rad(b.lat));
+  const x=Math.cos(rad(a.lat))*Math.sin(rad(b.lat))-Math.sin(rad(a.lat))*Math.cos(rad(b.lat))*Math.cos(dn);
+  return (deg(Math.atan2(y,x))+360)%360;}
+const mils=d=>Math.round(d*6400/360)%6400;
+function circle(c,km,n=96){const R=6371,la0=rad(c[1]),lo0=rad(c[0]),d=km/R,pts=[];
+  for(let i=0;i<=n;i++){const b=2*Math.PI*i/n;
+    const la=Math.asin(Math.sin(la0)*Math.cos(d)+Math.cos(la0)*Math.sin(d)*Math.cos(b));
+    const lo=lo0+Math.atan2(Math.sin(b)*Math.sin(d)*Math.cos(la0),Math.cos(d)-Math.sin(la0)*Math.sin(la));
+    pts.push([deg(lo),deg(la)]);}
+  return pts;}
+// ความสูงภูมิประเทศ (ม.) หารด้วยตัวคูณเพื่อให้เป็นความสูงจริง
+const h=p=>((map.queryTerrainElevation(p)??0)/ex);
+const fmt=p=>p.lat.toFixed(5)+', '+p.lng.toFixed(5);
+const say=t=>{$('info').textContent=t};
+
+// ---------- markers ----------
+function add(type,lng,lat){
+  const id=++seq,el=document.createElement('div');
+  el.innerHTML='<div class="mk '+type+'"><span>'+T[type][0]+'</span></div>';
+  const m=new maplibregl.Marker({element:el,draggable:true}).setLngLat([lng,lat]).addTo(map);
+  const it={id,type,m,el};
+  el.addEventListener('click',ev=>{ev.stopPropagation();pick(it)});
+  m.on('drag',rings);
+  m.on('dragend',()=>{save();show()});
+  items.push(it);rings();save();return it;
+}
+function pick(it){
+  const k=sel.indexOf(it);
+  if(k>=0)sel.splice(k,1);else{sel.push(it);if(sel.length>2)sel.shift()}
+  items.forEach(i=>i.el.firstChild.classList.toggle('sel',sel.includes(i)));
+  sel.length?show():say('ยังไม่ได้เลือกสัญลักษณ์');
+}
+function show(){
+  if(!sel.length)return;
+  let t=sel.map(i=>T[i.type][1]+' #'+i.id+'  '+fmt(i.m.getLngLat())+'  สูง≈'+Math.round(h(i.m.getLngLat()))+' ม.').join('\n');
+  if(sel.length===2){const a=sel[0].m.getLngLat(),b=sel[1].m.getLngLat();
+    t+='\nระยะ '+dist(a,b).toFixed(2)+' กม.  ทิศ '+mils(brg(a,b))+' มิล';}
+  say(t);
+}
+function save(){try{localStorage.setItem('items',JSON.stringify(items.map(i=>({t:i.type,p:i.m.getLngLat().toArray()}))))}catch(e){}}
+
+// ---------- range rings ----------
+function rings(){
+  const src=map.getSource('rings');if(!src)return;
+  const mn=+$('rmin').value,mx=+$('rmax').value,F=[];
+  items.filter(i=>i.type==='gun').forEach(i=>{
+    const c=i.m.getLngLat().toArray();
+    if(mx>0)F.push({type:'Feature',properties:{k:'max'},geometry:{type:'LineString',coordinates:circle(c,mx)}});
+    if(mn>0)F.push({type:'Feature',properties:{k:'min'},geometry:{type:'LineString',coordinates:circle(c,mn)}});
+  });
+  src.setData({type:'FeatureCollection',features:F});
+}
+$('rmin').oninput=rings;$('rmax').oninput=rings;
+
+// ---------- line of sight ----------
+function clearLos(){map.getSource('los')?.setData(empty)}
+$('los').onclick=()=>{
+  if(sel.length<2)return say('เลือก 2 จุดก่อน (แตะสัญลักษณ์) จุดแรกคือผู้ตรวจการณ์ จุดที่สองคือเป้าหมาย');
+  const a=sel[0].m.getLngLat(),b=sel[1].m.getLngLat(),D=dist(a,b)*1000,N=80;
+  const e0=h(a)+2,e1=h(b)+2;let block=null;
+  for(let i=1;i<N;i++){
+    const t=i/N,p=[a.lng+(b.lng-a.lng)*t,a.lat+(b.lat-a.lat)*t];
+    const bulge=t*(1-t)*D*D/(2*8.5e6),line=e0+(e1-e0)*t,g=h(p)+bulge;
+    if(g>line){block={t,p,over:g-line};break}
+  }
+  const A=[a.lng,a.lat],B=[b.lng,b.lat],F=[];
+  if(block){
+    F.push({type:'Feature',properties:{ok:true},geometry:{type:'LineString',coordinates:[A,block.p]}});
+    F.push({type:'Feature',properties:{ok:false},geometry:{type:'LineString',coordinates:[block.p,B]}});
+  }else F.push({type:'Feature',properties:{ok:true},geometry:{type:'LineString',coordinates:[A,B]}});
+  map.getSource('los').setData({type:'FeatureCollection',features:F});
+  say('ระยะ '+(D/1000).toFixed(2)+' กม.  ทิศ '+mils(brg(a,b))+' มิล\n'+
+    (block?'ถูกบัง ที่ระยะ '+(block.t*D/1000).toFixed(2)+' กม. (สูงเกินแนวสายตา ≈'+Math.round(block.over)+' ม.)':'มองเห็นกัน')+
+    '\nผลเป็นการประมาณจากข้อมูลความสูงฟรี ใช้ตรวจจริงในภูมิประเทศอีกครั้ง');
+};
+
+// ---------- UI ----------
+const tb=$('types');
+Object.keys(T).forEach(k=>{
+  const b=document.createElement('button');b.textContent=T[k][1];b.dataset.t=k;
+  b.onclick=()=>setMode(mode===k?null:k);tb.appendChild(b);
+});
+const nb=document.createElement('button');nb.textContent='เลื่อนดู';nb.onclick=()=>setMode(null);tb.appendChild(nb);
+function setMode(k){
+  mode=k;[...tb.children].forEach(b=>b.classList.toggle('on',b.dataset.t===k));
+  map.getCanvas().style.cursor=k?'crosshair':'';
+  say(k?'แตะบนแผนที่เพื่อวาง: '+T[k][1]:'โหมดเลื่อนดู');
+}
+map.on('click',e=>{if(mode)add(mode,e.lngLat.lng,e.lngLat.lat)});
+$('del').onclick=()=>{
+  sel.forEach(i=>i.m.remove());items=items.filter(i=>!sel.includes(i));sel=[];
+  rings();save();clearLos();say('ลบแล้ว');
+};
+$('clr').onclick=()=>{
+  if(!confirm('ล้างสัญลักษณ์ทั้งหมด?'))return;
+  items.forEach(i=>i.m.remove());items=[];sel=[];rings();save();clearLos();say('ล้างแล้ว');
+};
+$('ex').oninput=e=>{ex=+e.target.value;map.setTerrain({source:'dem',exaggeration:ex})};
+$('bm').onchange=e=>{
+  map.setLayoutProperty('osm','visibility',e.target.value==='osm'?'visible':'none');
+  map.setLayoutProperty('sat','visibility',e.target.value==='sat'?'visible':'none');
+};
+$('tg').onclick=()=>{$('panel').hidden=!$('panel').hidden};
+
+
+</script>
+</body>
+</html>
