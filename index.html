@@ -5,8 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#14211a">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%2314211a'/%3E%3Ccircle cx='32' cy='32' r='21' fill='none' stroke='%23fbbf24' stroke-width='4'/%3E%3Ccircle cx='32' cy='32' r='11' fill='none' stroke='%23fbbf24' stroke-width='3'/%3E%3Ccircle cx='32' cy='32' r='3' fill='%23fbbf24'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%2314211a'/%3E%3Ccircle cx='32' cy='32' r='21' fill='none' stroke='%23fbbf24' stroke-width='4'/%3E%3Ccircle cx='32' cy='32' r='3' fill='%23fbbf24'/%3E%3C/svg%3E">
 <title>แผนที่สถานการณ์ 3D</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css">
 <style>
@@ -16,50 +15,83 @@ html,body{height:100%;margin:0;background:#0d1510;font-family:system-ui,"Noto Sa
 #map{position:absolute;inset:0}
 .top{position:absolute;top:0;left:0;right:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 6px) 10px 6px;background:rgba(20,33,26,.88);color:#f3f4f6;font-size:13px}
 .top em{font-style:normal;color:#fbbf24;margin-left:6px}
-.panel{position:absolute;left:0;right:0;bottom:0;z-index:5;max-height:46vh;overflow:auto;padding:8px 10px calc(env(safe-area-inset-bottom,0px) + 8px);background:rgba(20,33,26,.94);color:#e5e7eb;border-radius:14px 14px 0 0;font-size:13px}
+.panel{position:absolute;left:0;right:0;bottom:0;z-index:5;max-height:50vh;overflow:auto;padding:8px 10px calc(env(safe-area-inset-bottom,0px) + 8px);background:rgba(20,33,26,.95);color:#e5e7eb;border-radius:14px 14px 0 0;font-size:13px}
 .row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:6px 0}
-button,select,input{font:inherit}
-button,select{background:#24382c;color:#fff;border:1px solid #3d5c48;border-radius:8px;padding:8px 10px}
+details{border-top:1px solid #2f4a39;padding:4px 0}
+summary{cursor:pointer;padding:6px 0;color:#fde68a;font-weight:600}
+button,select,.btn{font:inherit;background:#24382c;color:#fff;border:1px solid #3d5c48;border-radius:8px;padding:8px 10px;display:inline-block}
 button.on{background:#1d4ed8;border-color:#93c5fd}
 button.warn{background:#7f1d1d;border-color:#b91c1c}
-input[type=number]{width:64px;padding:6px;border-radius:6px;border:1px solid #3d5c48;background:#0d1510;color:#fff}
-#info{white-space:pre-line;line-height:1.55;color:#d1fae5;min-height:2.6em}
+input[type=number],input[type=text]{padding:7px;border-radius:6px;border:1px solid #3d5c48;background:#0d1510;color:#fff;font:inherit}
+input[type=number]{width:64px}
+#info{white-space:pre-line;line-height:1.55;color:#d1fae5;min-height:2.6em;margin-top:6px}
 .mk{display:flex;align-items:center;justify-content:center;width:36px;height:26px;border:2px solid #fff;color:#fff;font:700 11px system-ui,sans-serif;box-shadow:0 1px 5px #000a}
-.mk.sel{outline:3px solid #fbbf24}
 .mk.own{background:#2563eb}
 .mk.gun{background:#15803d;border-radius:50%;width:34px;height:34px}
 .mk.op{background:#0284c7}
 .mk.enemy{background:#dc2626;transform:rotate(45deg);width:28px;height:28px}
 .mk.enemy span{transform:rotate(-45deg)}
 .mk.tgt{background:#ea580c;border-radius:50%;width:34px;height:34px}
+.sym svg{display:block;filter:drop-shadow(0 1px 3px #000a)}
+.sel{outline:3px solid #fbbf24;outline-offset:2px}
+.cap{position:absolute;left:50%;top:100%;transform:translateX(-50%);white-space:nowrap;color:#fff;font:600 11px system-ui,sans-serif;text-shadow:0 0 3px #000,0 0 3px #000,0 0 3px #000;pointer-events:none}
 </style>
 </head>
 <body>
 <div id="map"></div>
 <div class="top"><span>แผนที่สถานการณ์ 3D<em>ต้นแบบ ห้ามใส่ข้อมูลจริง</em></span><button id="tg">เมนู</button></div>
 <div class="panel" id="panel">
-  <div class="row" id="types"></div>
   <div class="row">
-    <span>ระยะยิงต่ำสุด</span><input id="rmin" type="number" min="0" step="0.5" value="1">
-    <span>สูงสุด</span><input id="rmax" type="number" min="0" step="0.5" value="10"><span>กม. (ตัวอย่าง)</span>
+    <button id="ren">ตั้งชื่อ</button><button id="del" class="warn">ลบที่เลือก</button>
+    <button id="los">ตรวจแนวสายตา</button><button id="gps">วางที่ตำแหน่งฉัน</button>
+    <button id="pan" data-t="">เลื่อนดู</button>
   </div>
-  <div class="row">
-    <span>ภูมิประเทศ</span><input id="ex" type="range" min="1" max="3" step="0.1" value="1.3">
-    <select id="bm"><option value="osm">แผนที่ถนน</option><option value="sat">ดาวเทียม</option></select>
-  </div>
-  <div class="row">
-    <button id="los">ตรวจแนวสายตา</button>
-    <button id="del" class="warn">ลบที่เลือก</button>
-    <button id="gps">วางที่ตำแหน่งฉัน</button>
-    <button id="clr" class="warn">ล้างทั้งหมด</button>
-  </div>
-  <div id="info">แตะปุ่มประเภท แล้วแตะแผนที่เพื่อวางสัญลักษณ์ แตะสัญลักษณ์เพื่อเลือก (เลือกได้ 2 จุด) ลากเพื่อย้าย</div>
+  <div id="info">เลือกประเภทด้านล่าง แล้วแตะแผนที่เพื่อวาง แตะสัญลักษณ์เพื่อเลือก (เลือกได้ 2 จุด) ลากเพื่อย้าย</div>
+
+  <details open><summary>หน่วย (สัญลักษณ์ APP-6 / MIL-STD-2525)</summary>
+    <div class="row">
+      <select id="aff"><option value="F">ฝ่ายเรา</option><option value="H">ข้าศึก</option><option value="N">เป็นกลาง</option><option value="U">ไม่ทราบ</option></select>
+      <select id="utype">
+        <option value="UCI---">ทหารราบ</option><option value="UCA---">ยานเกราะ</option>
+        <option value="UCFH--">ปืนใหญ่ (ปืนใหญ่/ครก)</option><option value="UCFM--">ค./ปืนเล็กใหญ่</option>
+        <option value="UCR---">ลาดตระเวน</option><option value="UCE---">ช่าง</option>
+        <option value="UCD---">ต่อสู้อากาศยาน</option><option value="UCV---">การบินทหารบก</option>
+        <option value="USS---">ส่งกำลังบำรุง</option><option value="USM---">แพทย์</option>
+      </select>
+      <select id="ech"><option value="-">ไม่ระบุขนาด</option><option value="B">หมู่</option><option value="D">หมวด</option><option value="E">กองร้อย/กองร้อยปืนใหญ่</option><option value="F">กองพัน</option><option value="G">กรม</option><option value="H">กองพลน้อย</option><option value="I">กองพล</option></select>
+      <input id="uname" type="text" placeholder="ชื่อหน่วย เช่น ร.1" size="10">
+      <button id="bunit" data-t="unit">วางหน่วย</button>
+    </div>
+    <div class="row"><span>รหัส SIDC เอง</span><input id="sidc" type="text" placeholder="เช่น SFGPUCI----D---" size="18"><span>(กรอกแล้วจะใช้แทนตัวเลือกด้านบน)</span></div>
+  </details>
+
+  <details><summary>จุดปฏิบัติการ / วงรัศมียิง</summary>
+    <div class="row" id="types"></div>
+    <div class="row"><span>ระยะยิงต่ำสุด</span><input id="rmin" type="number" min="0" step="0.5" value="1"><span>สูงสุด</span><input id="rmax" type="number" min="0" step="0.5" value="10"><span>กม. (ตัวอย่าง วงรอบ "ที่ตั้งยิง" และหน่วยปืนใหญ่)</span></div>
+  </details>
+
+  <details><summary>แนว / เส้น (แนวต้าน ทิศทางรุก เขตแบ่ง)</summary>
+    <div class="row">
+      <select id="lcol"><option value="#3b82f6">น้ำเงิน (ฝ่ายเรา)</option><option value="#ef4444">แดง (ข้าศึก)</option><option value="#facc15">เหลือง (แนวประสาน)</option><option value="#f8fafc">ขาว</option></select>
+      <select id="ldash"><option value="">เส้นทึบ</option><option value="1">เส้นประ</option></select>
+      <button id="bline" data-t="line">วาดเส้น (แตะทีละจุด)</button><button id="lend">จบเส้น</button><button id="lundo">ย้อน/ลบเส้นล่าสุด</button>
+    </div>
+  </details>
+
+  <details><summary>มุมมอง / ไฟล์</summary>
+    <div class="row"><span>ภูมิประเทศ</span><input id="ex" type="range" min="1" max="3" step="0.1" value="1.3">
+      <select id="bm"><option value="osm">แผนที่ถนน</option><option value="sat">ดาวเทียม</option></select></div>
+    <div class="row"><button id="exp">ส่งออกไฟล์</button><label class="btn">นำเข้าไฟล์<input id="imp" type="file" accept=".json,application/json" hidden></label><button id="clr" class="warn">ล้างทั้งหมด</button></div>
+  </details>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/milsymbol@2.2.0/dist/milsymbol.js"></script>
 <script>
-const T={own:['FRN','ฝ่ายเรา'],gun:['GUN','ที่ตั้งยิง'],op:['OP','ที่ตรวจการณ์'],enemy:['ENY','ข้าศึก'],tgt:['TGT','เป้าหมาย']};
+const T={own:['FRN','ฝ่ายเรา'],gun:['GUN','ที่ตั้งยิง'],op:['OP','ที่ตรวจการณ์'],enemy:['ENY','ข้าศึก'],tgt:['TGT','เป้าหมาย'],unit:['UNIT','หน่วย']};
+const BASIC=['own','gun','op','enemy','tgt'];
 const $=id=>document.getElementById(id);
-let items=[],sel=[],mode=null,seq=0,ex=1.3,gpsW=null;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let items=[],sel=[],mode=null,seq=0,ex=1.3,gpsW=null,lines=[],cur=[];
 
 const map=new maplibregl.Map({
   container:'map',center:[101.37,14.44],zoom:12,pitch:65,bearing:20,maxPitch:80,
@@ -80,12 +112,13 @@ map.addControl(new maplibregl.GeolocateControl({positionOptions:{enableHighAccur
 const empty={type:'FeatureCollection',features:[]};
 map.on('load',()=>{
   map.setTerrain({source:'dem',exaggeration:ex});
-  map.addSource('rings',{type:'geojson',data:empty});
-  map.addSource('los',{type:'geojson',data:empty});
+  ['rings','los','lines'].forEach(s=>map.addSource(s,{type:'geojson',data:empty}));
   map.addLayer({id:'ring-max',type:'line',source:'rings',filter:['==',['get','k'],'max'],paint:{'line-color':'#f59e0b','line-width':2.5}});
   map.addLayer({id:'ring-min',type:'line',source:'rings',filter:['==',['get','k'],'min'],paint:{'line-color':'#fde68a','line-width':2,'line-dasharray':[2,2]}});
+  map.addLayer({id:'lines-s',type:'line',source:'lines',filter:['!',['to-boolean',['get','d']]],paint:{'line-color':['get','c'],'line-width':3.5}});
+  map.addLayer({id:'lines-d',type:'line',source:'lines',filter:['to-boolean',['get','d']],paint:{'line-color':['get','c'],'line-width':3.5,'line-dasharray':[3,2]}});
   map.addLayer({id:'los',type:'line',source:'los',paint:{'line-color':['case',['get','ok'],'#22c55e','#ef4444'],'line-width':4}});
-  try{JSON.parse(localStorage.getItem('items')||'[]').forEach(o=>add(o.t,o.p[0],o.p[1]))}catch(e){}
+  try{load(JSON.parse(localStorage.getItem('sit')||'null')||{items:JSON.parse(localStorage.getItem('items')||'[]')})}catch(e){}
 });
 
 // ---------- helpers ----------
@@ -103,20 +136,32 @@ function circle(c,km,n=96){const R=6371,la0=rad(c[1]),lo0=rad(c[0]),d=km/R,pts=[
     const lo=lo0+Math.atan2(Math.sin(b)*Math.sin(d)*Math.cos(la0),Math.cos(d)-Math.sin(la0)*Math.sin(la));
     pts.push([deg(lo),deg(la)]);}
   return pts;}
-// ความสูงภูมิประเทศ (ม.) หารด้วยตัวคูณเพื่อให้เป็นความสูงจริง
 const h=p=>((map.queryTerrainElevation(p)??0)/ex);
 const fmt=p=>p.lat.toFixed(5)+', '+p.lng.toFixed(5);
 const say=t=>{$('info').textContent=t};
+const nameOf=i=>T[i.type][1]+(i.name?' '+i.name:'')+' #'+i.id;
 
-// ---------- markers ----------
-function add(type,lng,lat){
-  const id=++seq,el=document.createElement('div');
-  el.innerHTML='<div class="mk '+type+'"><span>'+T[type][0]+'</span></div>';
-  const m=new maplibregl.Marker({element:el,draggable:true}).setLngLat([lng,lat]).addTo(map);
-  const it={id,type,m,el};
-  el.addEventListener('click',ev=>{ev.stopPropagation();pick(it)});
-  m.on('drag',rings);
-  m.on('dragend',()=>{save();show()});
+// ---------- symbols ----------
+function render(it){
+  let inner='';
+  if(it.type==='unit'&&typeof ms!=='undefined'){
+    try{inner='<div class="sym">'+new ms.Symbol(it.sidc,{size:34}).asSVG()+'</div>'}catch(e){}
+  }
+  if(!inner){
+    const cls=it.type==='unit'?({F:'own',H:'enemy'}[(it.sidc||'')[1]]||'tgt'):it.type;
+    inner='<div class="mk '+cls+'"><span>'+T[it.type][0]+'</span></div>';
+  }
+  it.el.innerHTML=inner+'<div class="cap">'+esc(it.name||'')+'</div>';
+  it.el.firstChild.classList.toggle('sel',sel.includes(it));
+}
+function add(type,lng,lat,o){
+  o=o||{};
+  const it={id:++seq,type,sidc:o.sidc,name:o.name||'',el:document.createElement('div')};
+  render(it);
+  it.m=new maplibregl.Marker({element:it.el,draggable:true}).setLngLat([lng,lat]).addTo(map);
+  it.el.addEventListener('click',ev=>{ev.stopPropagation();pick(it)});
+  it.m.on('drag',rings);
+  it.m.on('dragend',()=>{save();show()});
   items.push(it);rings();save();return it;
 }
 function pick(it){
@@ -127,18 +172,31 @@ function pick(it){
 }
 function show(){
   if(!sel.length)return;
-  let t=sel.map(i=>T[i.type][1]+' #'+i.id+'  '+fmt(i.m.getLngLat())+'  สูง≈'+Math.round(h(i.m.getLngLat()))+' ม.').join('\n');
+  let t=sel.map(i=>nameOf(i)+'  '+fmt(i.m.getLngLat())+'  สูง≈'+Math.round(h(i.m.getLngLat()))+' ม.').join('\n');
   if(sel.length===2){const a=sel[0].m.getLngLat(),b=sel[1].m.getLngLat();
     t+='\nระยะ '+dist(a,b).toFixed(2)+' กม.  ทิศ '+mils(brg(a,b))+' มิล';}
   say(t);
 }
-function save(){try{localStorage.setItem('items',JSON.stringify(items.map(i=>({t:i.type,p:i.m.getLngLat().toArray()}))))}catch(e){}}
+function unitSidc(){
+  const c=$('sidc').value.trim().toUpperCase();
+  return c||('S'+$('aff').value+'GP'+$('utype').value+'-'+$('ech').value+'---');
+}
+
+// ---------- save / load ----------
+const dump=()=>({items:items.map(i=>({t:i.type,s:i.sidc,n:i.name,p:i.m.getLngLat().toArray()})),lines});
+function save(){try{localStorage.setItem('sit',JSON.stringify(dump()))}catch(e){}}
+function load(d){
+  items.forEach(i=>i.m.remove());items=[];sel=[];lines=d.lines||[];
+  (d.items||[]).forEach(o=>{if(T[o.t])add(o.t,o.p[0],o.p[1],{sidc:o.s,name:o.n})});
+  drawLines();rings();save();
+}
 
 // ---------- range rings ----------
+const isGun=i=>i.type==='gun'||(i.sidc&&i.sidc.slice(4,8)==='UCFH');
 function rings(){
   const src=map.getSource('rings');if(!src)return;
   const mn=+$('rmin').value,mx=+$('rmax').value,F=[];
-  items.filter(i=>i.type==='gun').forEach(i=>{
+  items.filter(isGun).forEach(i=>{
     const c=i.m.getLngLat().toArray();
     if(mx>0)F.push({type:'Feature',properties:{k:'max'},geometry:{type:'LineString',coordinates:circle(c,mx)}});
     if(mn>0)F.push({type:'Feature',properties:{k:'min'},geometry:{type:'LineString',coordinates:circle(c,mn)}});
@@ -146,6 +204,20 @@ function rings(){
   src.setData({type:'FeatureCollection',features:F});
 }
 $('rmin').oninput=rings;$('rmax').oninput=rings;
+
+// ---------- lines ----------
+function drawLines(){
+  const src=map.getSource('lines');if(!src)return;
+  const F=lines.map(l=>({type:'Feature',properties:{c:l.c,d:l.d},geometry:{type:'LineString',coordinates:l.p}}));
+  if(cur.length>1)F.push({type:'Feature',properties:{c:$('lcol').value,d:$('ldash').value},geometry:{type:'LineString',coordinates:cur}});
+  src.setData({type:'FeatureCollection',features:F});
+}
+$('lend').onclick=()=>{
+  if(cur.length>1){lines.push({p:cur,c:$('lcol').value,d:$('ldash').value});save()}
+  cur=[];drawLines();say('จบเส้นแล้ว');
+};
+$('lundo').onclick=()=>{cur.length?cur.pop():lines.pop();save();drawLines()};
+$('lcol').onchange=drawLines;$('ldash').onchange=drawLines;
 
 // ---------- line of sight ----------
 function clearLos(){map.getSource('los')?.setData(empty)}
@@ -171,24 +243,37 @@ $('los').onclick=()=>{
 
 // ---------- UI ----------
 const tb=$('types');
-Object.keys(T).forEach(k=>{
-  const b=document.createElement('button');b.textContent=T[k][1];b.dataset.t=k;
-  b.onclick=()=>setMode(mode===k?null:k);tb.appendChild(b);
+BASIC.forEach(k=>{
+  const b=document.createElement('button');b.textContent=T[k][1];b.dataset.t=k;tb.appendChild(b);
 });
-const nb=document.createElement('button');nb.textContent='เลื่อนดู';nb.onclick=()=>setMode(null);tb.appendChild(nb);
+document.querySelectorAll('[data-t]').forEach(b=>{
+  b.onclick=()=>setMode(b.dataset.t&&mode!==b.dataset.t?b.dataset.t:null);
+});
 function setMode(k){
-  mode=k;[...tb.children].forEach(b=>b.classList.toggle('on',b.dataset.t===k));
+  mode=k;
+  document.querySelectorAll('[data-t]').forEach(b=>b.classList.toggle('on',!!k&&b.dataset.t===k));
   map.getCanvas().style.cursor=k?'crosshair':'';
-  say(k?'แตะบนแผนที่เพื่อวาง: '+T[k][1]:'โหมดเลื่อนดู');
+  say(!k?'โหมดเลื่อนดู':k==='line'?'แตะแผนที่ทีละจุด แล้วกด "จบเส้น"':k==='unit'?'แตะบนแผนที่เพื่อวางหน่วย':'แตะบนแผนที่เพื่อวาง: '+T[k][1]);
 }
-map.on('click',e=>{if(mode)add(mode,e.lngLat.lng,e.lngLat.lat)});
+map.on('click',e=>{
+  const p=[e.lngLat.lng,e.lngLat.lat];
+  if(mode==='line'){cur.push(p);drawLines()}
+  else if(mode==='unit')add('unit',p[0],p[1],{sidc:unitSidc(),name:$('uname').value.trim()});
+  else if(mode)add(mode,p[0],p[1]);
+});
+$('ren').onclick=()=>{
+  if(sel.length!==1)return say('เลือกสัญลักษณ์ 1 จุดก่อน');
+  const n=prompt('ชื่อ/หน่วย',sel[0].name);if(n===null)return;
+  sel[0].name=n;render(sel[0]);save();show();
+};
 $('del').onclick=()=>{
   sel.forEach(i=>i.m.remove());items=items.filter(i=>!sel.includes(i));sel=[];
   rings();save();clearLos();say('ลบแล้ว');
 };
 $('clr').onclick=()=>{
-  if(!confirm('ล้างสัญลักษณ์ทั้งหมด?'))return;
-  items.forEach(i=>i.m.remove());items=[];sel=[];rings();save();clearLos();say('ล้างแล้ว');
+  if(!confirm('ล้างสัญลักษณ์และเส้นทั้งหมด?'))return;
+  items.forEach(i=>i.m.remove());items=[];sel=[];lines=[];cur=[];
+  rings();drawLines();save();clearLos();say('ล้างแล้ว');
 };
 $('ex').oninput=e=>{ex=+e.target.value;map.setTerrain({source:'dem',exaggeration:ex})};
 $('bm').onchange=e=>{
@@ -196,8 +281,19 @@ $('bm').onchange=e=>{
   map.setLayoutProperty('sat','visibility',e.target.value==='sat'?'visible':'none');
 };
 $('tg').onclick=()=>{$('panel').hidden=!$('panel').hidden};
+$('exp').onclick=()=>{
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(dump())],{type:'application/json'}));
+  a.download='situation.json';a.click();
+};
+$('imp').onchange=e=>{
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{try{load(JSON.parse(r.result));say('นำเข้าแล้ว')}catch(x){say('ไฟล์ไม่ถูกต้อง')}};
+  r.readAsText(f);e.target.value='';
+};
 
-
+// ---------- GPS ----------
 $('gps').onclick=()=>{
   if(!navigator.geolocation)return say('เครื่องนี้ไม่รองรับ GPS');
   if(gpsW!==null){navigator.geolocation.clearWatch(gpsW);gpsW=null}
@@ -206,9 +302,11 @@ $('gps').onclick=()=>{
     if(gpsW===null)return;
     navigator.geolocation.clearWatch(gpsW);gpsW=null;
     if(!best)return say('ไม่ได้ตำแหน่ง ลองไปที่โล่งแล้วกดใหม่');
-    const k=mode||'own',c=best.coords;
-    add(k,c.longitude,c.latitude);map.flyTo({center:[c.longitude,c.latitude],zoom:c.accuracy>100?14:16});
-    say('วาง'+T[k][1]+'  '+c.latitude.toFixed(5)+', '+c.longitude.toFixed(5)+'\nคลาดเคลื่อน ±'+Math.round(c.accuracy)+' ม.'+(c.accuracy>50?'\nไม่แม่นพอ ให้ลากสัญลักษณ์ไปจุดที่ถูกต้องบนแผนที่':''));
+    const c=best.coords;
+    if(mode==='unit')add('unit',c.longitude,c.latitude,{sidc:unitSidc(),name:$('uname').value.trim()});
+    else add(BASIC.includes(mode)?mode:'own',c.longitude,c.latitude);
+    map.flyTo({center:[c.longitude,c.latitude],zoom:c.accuracy>100?14:16});
+    say('วางที่ตำแหน่งปัจจุบัน  '+c.latitude.toFixed(5)+', '+c.longitude.toFixed(5)+'\nคลาดเคลื่อน ±'+Math.round(c.accuracy)+' ม.'+(c.accuracy>50?'\nไม่แม่นพอ ให้ลากสัญลักษณ์ไปจุดที่ถูกต้องบนแผนที่':''));
   };
   gpsW=navigator.geolocation.watchPosition(p=>{
     if(!best||p.coords.accuracy<best.coords.accuracy)best=p;
@@ -220,7 +318,6 @@ $('gps').onclick=()=>{
   },{enableHighAccuracy:true,timeout:30000,maximumAge:0});
   setTimeout(done,25000);
 };
-
 </script>
 </body>
 </html>
