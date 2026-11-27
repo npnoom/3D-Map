@@ -50,6 +50,7 @@ input[type=number]{width:64px;padding:6px;border-radius:6px;border:1px solid #3d
   <div class="row">
     <button id="los">ตรวจแนวสายตา</button>
     <button id="del" class="warn">ลบที่เลือก</button>
+    <button id="gps">วางที่ตำแหน่งฉัน</button>
     <button id="clr" class="warn">ล้างทั้งหมด</button>
   </div>
   <div id="info">แตะปุ่มประเภท แล้วแตะแผนที่เพื่อวางสัญลักษณ์ แตะสัญลักษณ์เพื่อเลือก (เลือกได้ 2 จุด) ลากเพื่อย้าย</div>
@@ -74,6 +75,7 @@ const map=new maplibregl.Map({
 });
 map.addControl(new maplibregl.NavigationControl({visualizePitch:true}),'top-right');
 map.addControl(new maplibregl.ScaleControl({unit:'metric'}),'bottom-left');
+map.addControl(new maplibregl.GeolocateControl({positionOptions:{enableHighAccuracy:true},trackUserLocation:true,showAccuracyCircle:true}),'top-right');
 
 const empty={type:'FeatureCollection',features:[]};
 map.on('load',()=>{
@@ -195,6 +197,16 @@ $('bm').onchange=e=>{
 };
 $('tg').onclick=()=>{$('panel').hidden=!$('panel').hidden};
 
+
+$('gps').onclick=()=>{
+  if(!navigator.geolocation)return say('เครื่องนี้ไม่รองรับ GPS');
+  say('กำลังหาตำแหน่ง...');
+  navigator.geolocation.getCurrentPosition(p=>{
+    const lo=p.coords.longitude,la=p.coords.latitude,k=mode||'own';
+    add(k,lo,la);map.flyTo({center:[lo,la],zoom:15});
+    say('วาง'+T[k][1]+'ที่ตำแหน่งปัจจุบัน\n'+la.toFixed(5)+', '+lo.toFixed(5)+'  คลาดเคลื่อน ±'+Math.round(p.coords.accuracy)+' ม.');
+  },err=>say(err.code===1?'ยังไม่อนุญาตตำแหน่ง ให้เปิดสิทธิ์ตำแหน่งของเว็บนี้ในเบราว์เซอร์':'ได้สัญญาณ GPS ไม่พอ ลองไปที่โล่งแล้วกดใหม่'),{enableHighAccuracy:true,timeout:15000,maximumAge:0});
+};
 
 </script>
 </body>
