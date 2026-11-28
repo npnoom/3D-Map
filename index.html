@@ -69,7 +69,7 @@ input[type=number]{width:64px}
 <div class="rail">
   <button class="rb on" id="pan" data-t=""><i>✥</i>เลื่อนดู</button>
   <button class="rb" id="rb-units"><i>▣</i>หน่วย</button>
-  <button class="rb" id="rb-points"><i>◉</i>จุด/วงยิง</button>
+  <button class="rb" id="rb-points"><i>◉</i>จุด/กรวยยิง</button>
   <button class="rb" id="rb-lines"><i>〰</i>เส้น</button>
   <button class="rb" id="grid"><i>▦</i>กริด</button>
   <button class="rb" id="rb-coord"><i>⊕</i>พิกัด</button>
@@ -97,10 +97,13 @@ input[type=number]{width:64px}
 </div>
 
 <div class="dr" id="dr-points" hidden>
-  <div class="drh"><span>จุดปฏิบัติการ / วงยิง</span><button class="x" data-close>✕</button></div>
+  <div class="drh"><span>จุดปฏิบัติการ / กรวยยิง</span><button class="x" data-close>✕</button></div>
   <div class="row" id="types"></div>
-  <div class="row"><span>ระยะยิง ต่ำสุด</span><input id="rmin" type="number" min="0" step="0.5" value="1"><span>สูงสุด</span><input id="rmax" type="number" min="0" step="0.5" value="10"><span>กม.</span></div>
-  <div class="hint">วงรัศมีขึ้นรอบ "ที่ตั้งยิง" และหน่วยปืนใหญ่ (ค่าตัวอย่าง แก้ตามอาวุธ)</div>
+  <div class="hint" id="fanwho"></div>
+  <div class="row"><span>ทิศยิง</span><input id="faz" type="number" step="1" value="0"><span>กว้าง</span><input id="fw" type="number" min="0" step="1" value="1600"><select id="fu"><option value="mil">มิล</option><option value="deg">องศา</option></select></div>
+  <div class="row"><span>ระยะ ต่ำสุด</span><input id="rmin" type="number" min="0" step="0.5" value="1"><span>สูงสุด</span><input id="rmax" type="number" min="0" step="0.5" value="10"><span>กม.</span></div>
+  <div class="row"><button id="faim">หันไปที่หมุด / จุดที่สอง</button></div>
+  <div class="hint">เลือกอาวุธ (ที่ตั้งยิงหรือหน่วยปืนใหญ่) เพื่อตั้งค่าเฉพาะกระบอก ถ้าไม่ได้เลือกคือค่าเริ่มต้นของทุกกระบอก ทิศวัดจากทิศเหนือจริง (มิล 6400 = 360°) กว้าง 6400 มิล = ทุกทิศ ค่าตัวอย่าง แก้ตามอาวุธและกระสุน</div>
 </div>
 
 <div class="dr" id="dr-lines" hidden>
@@ -123,7 +126,7 @@ input[type=number]{width:64px}
 <div class="dr" id="dr-more" hidden>
   <div class="drh"><span>เพิ่มเติม</span><button class="x" data-close>✕</button></div>
   <div class="row"><span>ภูมิประเทศ</span><input id="ex" type="range" min="1" max="3" step="0.1" value="1.3"></div>
-  <div class="row"><select id="bm"><option value="osm">แผนที่ถนน</option><option value="sat">ดาวเทียม</option></select>
+  <div class="row"><select id="bm"><option value="osm">แผนที่ถนน</option><option value="sat">ดาวเทียม</option><option value="hyb">ไฮบริด (ดาวเทียม+ถนน/ชื่อ)</option></select>
     <select id="gsp"><option value="auto">กริด: อัตโนมัติ</option><option value="100">กริด 100 ม.</option><option value="1000">กริด 1 กม.</option><option value="10000">กริด 10 กม.</option><option value="100000">กริด 100 กม.</option></select></div>
   <div class="row"><button id="pinx">ล้างหมุด</button><button id="exp">ส่งออกไฟล์</button><label class="btn">นำเข้าไฟล์<input id="imp" type="file" accept=".json,application/json" hidden></label></div>
   <div class="row"><button id="clr" class="warn">ล้างทั้งหมด</button></div>
@@ -149,17 +152,22 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let items=[],sel=[],mode=null,seq=0,ex=1.3,gpsW=null,lines=[],cur=[];
 
+const V=(()=>{try{return JSON.parse(localStorage.getItem('view')||'null')}catch(e){return null}})();
 const map=new maplibregl.Map({
-  container:'map',center:[101.37,14.44],zoom:12,pitch:65,bearing:20,maxPitch:80,
+  container:'map',center:V?V.c:[101.37,14.44],zoom:V?V.z:12,pitch:V?V.p:65,bearing:V?V.b:20,maxPitch:80,
   attributionControl:{compact:true},
   style:{version:8,sources:{
     osm:{type:'raster',tiles:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],tileSize:256,maxzoom:19,attribution:'© OpenStreetMap contributors'},
     sat:{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],tileSize:256,maxzoom:18,attribution:'Imagery © Esri'},
+    trn:{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}'],tileSize:256,maxzoom:19,attribution:'Roads © Esri'},
+    lbl:{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],tileSize:256,maxzoom:19,attribution:'Places © Esri'},
     dem:{type:'raster-dem',tiles:['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],encoding:'terrarium',tileSize:256,maxzoom:15,attribution:'Terrain: Mapzen / AWS'}},
     layers:[
       {id:'osm',type:'raster',source:'osm'},
       {id:'sat',type:'raster',source:'sat',layout:{visibility:'none'}},
-      {id:'hill',type:'hillshade',source:'dem',paint:{'hillshade-exaggeration':0.3}}]}
+      {id:'hill',type:'hillshade',source:'dem',paint:{'hillshade-exaggeration':0.3}},
+      {id:'hyb-t',type:'raster',source:'trn',layout:{visibility:'none'}},
+      {id:'hyb-l',type:'raster',source:'lbl',layout:{visibility:'none'}}]}
 });
 map.addControl(new maplibregl.NavigationControl({visualizePitch:true}),'top-right');
 map.addControl(new maplibregl.ScaleControl({unit:'metric'}),'bottom-left');
@@ -167,16 +175,24 @@ map.addControl(new maplibregl.GeolocateControl({positionOptions:{enableHighAccur
 
 const empty={type:'FeatureCollection',features:[]};
 map.on('load',()=>{
+  if(V){
+    if(V.bm){$('bm').value=V.bm;applyBm(V.bm)}
+    if(V.ex){ex=+V.ex;$('ex').value=ex}
+    if(V.gsp)$('gsp').value=V.gsp;
+    if(V.grid){gridOn=true;$('grid').classList.add('on')}
+  }
   map.setTerrain({source:'dem',exaggeration:ex});
   ['rings','los','lines','grid','me'].forEach(s=>map.addSource(s,{type:'geojson',data:empty}));
   map.addLayer({id:'me-acc',type:'fill',source:'me',paint:{'fill-color':'#3b82f6','fill-opacity':0.15}});
   map.addLayer({id:'me-acc-l',type:'line',source:'me',paint:{'line-color':'#60a5fa','line-width':1.5}});
   map.addLayer({id:'grid-a',type:'line',source:'grid',paint:{'line-color':'#fde047','line-opacity':0.6,'line-width':['case',['get','m'],2.2,1]}});
-  map.addLayer({id:'ring-max',type:'line',source:'rings',filter:['==',['get','k'],'max'],paint:{'line-color':'#f59e0b','line-width':2.5}});
-  map.addLayer({id:'ring-min',type:'line',source:'rings',filter:['==',['get','k'],'min'],paint:{'line-color':'#fde68a','line-width':2,'line-dasharray':[2,2]}});
+  map.addLayer({id:'fan-fill',type:'fill',source:'rings',filter:['==',['get','k'],'fan'],paint:{'fill-color':'#f59e0b','fill-opacity':0.2}});
+  map.addLayer({id:'fan-line',type:'line',source:'rings',filter:['==',['get','k'],'fan'],paint:{'line-color':'#f59e0b','line-width':2.5}});
+  map.addLayer({id:'fan-axis',type:'line',source:'rings',filter:['==',['get','k'],'axis'],paint:{'line-color':'#fde68a','line-width':2,'line-dasharray':[3,2]}});
   map.addLayer({id:'lines-s',type:'line',source:'lines',filter:['!',['to-boolean',['get','d']]],paint:{'line-color':['get','c'],'line-width':3.5}});
   map.addLayer({id:'lines-d',type:'line',source:'lines',filter:['to-boolean',['get','d']],paint:{'line-color':['get','c'],'line-width':3.5,'line-dasharray':[3,2]}});
   map.addLayer({id:'los',type:'line',source:'los',paint:{'line-color':['case',['get','ok'],'#22c55e','#ef4444'],'line-width':4}});
+  if(gridOn)drawGrid();
   try{load(JSON.parse(localStorage.getItem('sit')||'null')||{items:JSON.parse(localStorage.getItem('items')||'[]')})}catch(e){}
 });
 
@@ -213,7 +229,7 @@ async function elevAt(p){
 const fmt=p=>p.lat.toFixed(5)+', '+p.lng.toFixed(5);
 let cardT;
 const say=t=>{$('info').textContent=t;$('card').hidden=false;clearTimeout(cardT);cardT=setTimeout(()=>{$('card').hidden=true},30000)};
-function selUi(){$('selbar').hidden=!sel.length;$('los').hidden=sel.length<2;$('ren').hidden=sel.length!==1}
+function selUi(){$('selbar').hidden=!sel.length;$('los').hidden=sel.length<2;$('ren').hidden=sel.length!==1;fanUI()}
 
 // ---- MGRS ----
 const WA=6378137,WF=1/298.257223563,K0=0.9996,E2=WF*(2-WF),EP2=E2/(1-E2);
@@ -357,7 +373,7 @@ function render(it){
 }
 function add(type,lng,lat,o){
   o=o||{};
-  const it={id:++seq,type,sidc:o.sidc,name:o.name||'',el:document.createElement('div')};
+  const it={id:++seq,type,sidc:o.sidc,name:o.name||'',fan:o.fan||null,el:document.createElement('div')};
   render(it);
   it.m=new maplibregl.Marker({element:it.el,draggable:true}).setLngLat([lng,lat]).addTo(map);
   it.el.addEventListener('click',ev=>{ev.stopPropagation();pick(it)});
@@ -424,27 +440,78 @@ function pkRender(){
   },20);
 }
 // ---------- save / load ----------
-const dump=()=>({items:items.map(i=>({t:i.type,s:i.sidc,n:i.name,p:i.m.getLngLat().toArray()})),lines});
+const dump=()=>({items:items.map(i=>({t:i.type,s:i.sidc,n:i.name,f:i.fan||undefined,p:i.m.getLngLat().toArray()})),lines,fd:DEF});
 function save(){try{localStorage.setItem('sit',JSON.stringify(dump()))}catch(e){}}
 function load(d){
   items.forEach(i=>i.m.remove());items=[];sel=[];selUi();lines=d.lines||[];
-  (d.items||[]).forEach(o=>{if(T[o.t])add(o.t,o.p[0],o.p[1],{sidc:o.s,name:o.n})});
+  if(d.fd)Object.assign(DEF,d.fd);
+  (d.items||[]).forEach(o=>{if(T[o.t])add(o.t,o.p[0],o.p[1],{sidc:o.s,name:o.n,fan:o.f})});
   drawLines();rings();save();
 }
 
 // ---------- range rings ----------
 const isGun=i=>i.type==='gun'||(i.sidc&&i.sidc.slice(4,8)==='UCFH');
+// ---- FAN ----
+const DEF={az:0,w:1600,min:1,max:10};
+const fanOf=i=>i.fan||DEF;
+const m2d=m=>m*360/6400;
+function dest(c,brgDeg,km){
+  const R=6371,la0=rad(c[1]),lo0=rad(c[0]),d=km/R,b=rad(brgDeg);
+  const la=Math.asin(Math.sin(la0)*Math.cos(d)+Math.cos(la0)*Math.sin(d)*Math.cos(b));
+  const lo=lo0+Math.atan2(Math.sin(b)*Math.sin(d)*Math.cos(la0),Math.cos(d)-Math.sin(la0)*Math.sin(la));
+  return [deg(lo),deg(la)];
+}
+// กรวยยิง = ส่วนของวงแหวน ระหว่างระยะต่ำสุดกับสูงสุด กว้างตามมุม รอบทิศยิง
+function fanPoly(c,f){
+  const a0=m2d(f.az),wd=Math.min(360,m2d(f.w));
+  if(wd>=359.9)return f.min>0?[circle(c,f.max),circle(c,f.min)]:[circle(c,f.max)];
+  const steps=Math.max(6,Math.ceil(wd/3));
+  const arc=(r,rev)=>{const o=[];for(let k=0;k<=steps;k++)o.push(dest(c,a0-wd/2+wd*(rev?steps-k:k)/steps,r));return o};
+  const ring=arc(f.max,false);
+  if(f.min>0)ring.push(...arc(f.min,true));else ring.push(c);
+  ring.push(ring[0]);
+  return [ring];
+}
+// ---- /FAN ----
 function rings(){
   const src=map.getSource('rings');if(!src)return;
-  const mn=+$('rmin').value,mx=+$('rmax').value,F=[];
+  const F=[];
   items.filter(isGun).forEach(i=>{
-    const c=i.m.getLngLat().toArray();
-    if(mx>0)F.push({type:'Feature',properties:{k:'max'},geometry:{type:'LineString',coordinates:circle(c,mx)}});
-    if(mn>0)F.push({type:'Feature',properties:{k:'min'},geometry:{type:'LineString',coordinates:circle(c,mn)}});
+    const c=i.m.getLngLat().toArray(),f=fanOf(i);
+    if(!(f.max>0))return;
+    F.push({type:'Feature',properties:{k:'fan'},geometry:{type:'Polygon',coordinates:fanPoly(c,{az:f.az,w:f.w,max:f.max,min:Math.min(f.min,f.max)})}});
+    F.push({type:'Feature',properties:{k:'axis'},geometry:{type:'LineString',coordinates:[c,dest(c,m2d(f.az),f.max)]}});
   });
   src.setData({type:'FeatureCollection',features:F});
 }
-$('rmin').oninput=rings;$('rmax').oninput=rings;
+const selGuns=()=>sel.filter(isGun);
+const toU=m=>$('fu').value==='deg'?+(m*360/6400).toFixed(2):Math.round(m);
+const fromU=v=>$('fu').value==='deg'?v*6400/360:v;
+function fanUI(){
+  const gs=selGuns(),f=gs.length?fanOf(gs[0]):DEF;
+  $('faz').value=toU(f.az);$('fw').value=toU(f.w);$('rmin').value=f.min;$('rmax').value=f.max;
+  $('fanwho').textContent=gs.length?'กรวยยิงของ: '+nameOf(gs[0])+(gs.length>1?' (และอีก '+(gs.length-1)+' กระบอก ใช้ค่าชุดเดียวกัน)':''):'ค่าเริ่มต้นของทุกกระบอก (เลือกอาวุธเพื่อตั้งค่าเฉพาะกระบอก)';
+}
+function fanEdit(){
+  const v={az:((fromU(+$('faz').value||0)%6400)+6400)%6400,w:Math.max(0,Math.min(6400,fromU(+$('fw').value||0))),min:Math.max(0,+$('rmin').value||0),max:Math.max(0,+$('rmax').value||0)};
+  const gs=selGuns();
+  if(gs.length)gs.forEach(i=>{i.fan={...v}});else Object.assign(DEF,v);
+  rings();save();
+}
+['faz','fw','rmin','rmax'].forEach(id=>{$(id).oninput=fanEdit});
+$('fu').onchange=fanUI;
+$('faim').onclick=()=>{
+  const g=selGuns()[0];
+  if(!g)return say('เลือกอาวุธ (ที่ตั้งยิงหรือหน่วยปืนใหญ่) ก่อน');
+  let t=null;
+  if(typeof probe!=='undefined'&&probe)t=probe.m.getLngLat();
+  else if(sel.length===2){const o=sel.find(i=>i!==g);if(o)t=o.m.getLngLat()}
+  if(!t)return say('ปักหมุดเป้าหมายก่อน (แตะแผนที่ในโหมดเลื่อนดู) หรือเลือกจุดที่สอง');
+  const a=g.m.getLngLat(),az=mils(brg(a,t));
+  selGuns().forEach(i=>{i.fan={...fanOf(i),az}});
+  fanUI();rings();save();
+  say('หันกรวยไปที่ทิศ '+az+' มิล  ระยะถึงหมุด '+dist(a,t).toFixed(2)+' กม.');
+};
 
 // ---------- lines ----------
 function drawLines(){
@@ -530,8 +597,8 @@ map.on('click',e=>{
   else if(mode)add(mode,p[0],p[1]);
   else setProbe(p[0],p[1]);
 });
-$('grid').onclick=()=>{gridOn=!gridOn;$('grid').classList.toggle('on',gridOn);drawGrid();if(gridOn)say('เปิดเส้นกริด UTM (WGS84) ตัวเลขที่ขอบคือหลักกริด เส้นหนา = ทุก 10 ช่อง')};
-$('gsp').onchange=drawGrid;
+$('grid').onclick=()=>{gridOn=!gridOn;$('grid').classList.toggle('on',gridOn);drawGrid();saveView();if(gridOn)say('เปิดเส้นกริด UTM (WGS84) ตัวเลขที่ขอบคือหลักกริด เส้นหนา = ทุก 10 ช่อง')};
+$('gsp').onchange=()=>{drawGrid();saveView()};
 map.on('moveend',drawGrid);
 const ctr=()=>{$('mgc').textContent='กลางจอ '+mgrs(map.getCenter())};
 map.on('moveend',ctr);map.on('load',ctr);
@@ -560,11 +627,16 @@ $('clr').onclick=()=>{
   items.forEach(i=>i.m.remove());items=[];sel=[];selUi();lines=[];cur=[];
   rings();drawLines();save();clearLos();say('ล้างแล้ว');
 };
-$('ex').oninput=e=>{ex=+e.target.value;map.setTerrain({source:'dem',exaggeration:ex})};
-$('bm').onchange=e=>{
-  map.setLayoutProperty('osm','visibility',e.target.value==='osm'?'visible':'none');
-  map.setLayoutProperty('sat','visibility',e.target.value==='sat'?'visible':'none');
-};
+$('ex').oninput=e=>{ex=+e.target.value;map.setTerrain({source:'dem',exaggeration:ex});saveView()};
+function applyBm(v){
+  const on=(id,b)=>map.setLayoutProperty(id,'visibility',b?'visible':'none');
+  on('osm',v==='osm');on('sat',v==='sat'||v==='hyb');on('hyb-t',v==='hyb');on('hyb-l',v==='hyb');
+}
+function saveView(){
+  try{const c=map.getCenter();localStorage.setItem('view',JSON.stringify({c:[c.lng,c.lat],z:map.getZoom(),p:map.getPitch(),b:map.getBearing(),bm:$('bm').value,ex,grid:gridOn,gsp:$('gsp').value}))}catch(e){}
+}
+map.on('moveend',saveView);
+$('bm').onchange=e=>{applyBm(e.target.value);saveView()};
 $('exp').onclick=()=>{
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([JSON.stringify(dump())],{type:'application/json'}));
