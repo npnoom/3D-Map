@@ -13,9 +13,6 @@
 [hidden]{display:none!important}
 html,body{height:100%;margin:0;background:#0d1510;font-family:system-ui,"Noto Sans Thai",sans-serif}
 #map{position:absolute;inset:0}
-.top{position:absolute;top:0;left:0;right:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 6px) 10px 6px;background:rgba(20,33,26,.88);color:#f3f4f6;font-size:13px}
-.top em{font-style:normal;color:#fbbf24;margin-left:6px}
-.panel{position:absolute;left:0;right:0;bottom:0;z-index:5;max-height:50vh;overflow:auto;padding:8px 10px calc(env(safe-area-inset-bottom,0px) + 8px);background:rgba(20,33,26,.95);color:#e5e7eb;border-radius:14px 14px 0 0;font-size:13px}
 .row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:6px 0}
 details{border-top:1px solid #2f4a39;padding:4px 0}
 summary{cursor:pointer;padding:6px 0;color:#fde68a;font-weight:600}
@@ -24,7 +21,6 @@ button.on{background:#1d4ed8;border-color:#93c5fd}
 button.warn{background:#7f1d1d;border-color:#b91c1c}
 input[type=number],input[type=text]{padding:7px;border-radius:6px;border:1px solid #3d5c48;background:#0d1510;color:#fff;font:inherit}
 input[type=number]{width:64px}
-#info{white-space:pre-line;line-height:1.55;color:#d1fae5;min-height:2.6em;margin-top:6px}
 .mk{display:flex;align-items:center;justify-content:center;width:36px;height:26px;border:2px solid #fff;color:#fff;font:700 11px system-ui,sans-serif;box-shadow:0 1px 5px #000a}
 .mk.own{background:#2563eb}
 .mk.gun{background:#15803d;border-radius:50%;width:34px;height:34px}
@@ -38,61 +34,110 @@ input[type=number]{width:64px}
 .pin{width:26px;height:36px;cursor:grab}
 .pin svg{display:block;filter:drop-shadow(0 1px 3px #000a)}
 .pl{position:absolute;left:50%;bottom:42px;transform:translateX(-50%);white-space:nowrap;background:rgba(0,0,0,.8);color:#fff;font:600 11px/1.4 system-ui,sans-serif;padding:3px 8px;border-radius:6px;text-align:center;pointer-events:none}
+.tile{background:#1b2d22;border:1px solid #3d5c48;border-radius:8px;padding:6px 4px;text-align:center;color:#fff;font-size:11px;line-height:1.3}
+.tile .sym{display:flex;justify-content:center;min-height:38px;align-items:center}
+.tile svg{max-width:100%;height:auto}
+.tile.on{border-color:#fbbf24;background:#2f4a39}
+#pk{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;gap:6px;padding:calc(env(safe-area-inset-top,0px) + 8px) 10px calc(env(safe-area-inset-bottom,0px) + 8px);background:#0d1510;color:#e5e7eb;font-size:13px}
+#pkg{flex:1;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px;align-content:start}
+.pkh{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:15px}
+.pkf{display:flex;justify-content:space-between;align-items:center;gap:8px;border-top:1px solid #2f4a39;padding-top:8px}
+.top{position:absolute;top:0;left:0;right:0;z-index:5;display:flex;justify-content:space-between;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 3px) 10px 3px;background:rgba(20,33,26,.8);color:#f3f4f6;font-size:12px;pointer-events:none}
+.top em{font-style:normal;color:#fbbf24;margin-left:6px;font-size:11px}
+.rail{position:absolute;left:calc(env(safe-area-inset-left,0px) + 6px);top:calc(env(safe-area-inset-top,0px) + 30px);z-index:6;display:flex;flex-direction:column;gap:4px;max-height:calc(100% - 110px);overflow-y:auto}
+.rb{width:56px;min-height:48px;padding:3px 2px;font-size:10px;line-height:1.15;border-radius:10px;background:rgba(20,33,26,.9);border:1px solid #3d5c48;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
+.rb i{font-style:normal;font-size:17px;line-height:1}
+.rb.on{background:#1d4ed8;border-color:#93c5fd}
+.dr{position:absolute;left:calc(env(safe-area-inset-left,0px) + 68px);top:calc(env(safe-area-inset-top,0px) + 30px);z-index:6;width:min(340px,calc(100% - 150px));max-height:calc(100% - 110px);overflow:auto;background:rgba(20,33,26,.95);color:#e5e7eb;border:1px solid #3d5c48;border-radius:12px;padding:6px 10px;font-size:13px}
+.drh{display:flex;justify-content:space-between;align-items:center;color:#fde68a;font-weight:600}
+.x{padding:2px 9px;border-radius:6px}
+.hint{color:#9ca3af;font-size:11px;line-height:1.4}
+#bot{position:absolute;left:calc(env(safe-area-inset-left,0px) + 68px);bottom:calc(env(safe-area-inset-bottom,0px) + 28px);right:80px;z-index:5;display:flex;flex-direction:column;gap:6px;align-items:flex-start;pointer-events:none}
+#bot>*{pointer-events:auto}
+#selbar{display:flex;gap:6px;flex-wrap:wrap;background:rgba(20,33,26,.92);border:1px solid #3d5c48;border-radius:10px;padding:5px}
+#card{display:flex;gap:8px;align-items:flex-start;max-width:440px;background:rgba(20,33,26,.92);border:1px solid #3d5c48;border-radius:10px;padding:6px 8px;color:#d1fae5;font-size:12px}
+#info{white-space:pre-line;line-height:1.5}
+@media(max-width:600px){.dr{width:calc(100% - 76px)}}
 .cap{position:absolute;left:50%;top:100%;transform:translateX(-50%);white-space:nowrap;color:#fff;font:600 11px system-ui,sans-serif;text-shadow:0 0 3px #000,0 0 3px #000,0 0 3px #000;pointer-events:none}
 </style>
 </head>
 <body>
 <div id="map"></div>
-<div class="top"><span>แผนที่สถานการณ์ 3D<em>ต้นแบบ ห้ามใส่ข้อมูลจริง</em></span><span id="mgc" style="font-size:12px;color:#d1fae5"></span><button id="tg">เมนู</button></div>
-<div class="panel" id="panel">
+<div class="top"><span>แผนที่สถานการณ์ 3D<em>ต้นแบบ ห้ามใส่ข้อมูลจริง</em></span><span id="mt" style="color:#93c5fd"></span><span id="mgc" style="color:#d1fae5"></span></div>
+
+<div class="rail">
+  <button class="rb on" id="pan" data-t=""><i>✥</i>เลื่อนดู</button>
+  <button class="rb" id="rb-units"><i>▣</i>หน่วย</button>
+  <button class="rb" id="rb-points"><i>◉</i>จุด/วงยิง</button>
+  <button class="rb" id="rb-lines"><i>〰</i>เส้น</button>
+  <button class="rb" id="grid"><i>▦</i>กริด</button>
+  <button class="rb" id="rb-coord"><i>⊕</i>พิกัด</button>
+  <button class="rb" id="gps"><i>⌖</i>ตำแหน่งฉัน</button>
+  <button class="rb" id="rb-more"><i>☰</i>เพิ่มเติม</button>
+</div>
+
+<div class="dr" id="dr-units" hidden>
+  <div class="drh"><span>หน่วย (APP-6 / 2525)</span><button class="x" data-close>✕</button></div>
   <div class="row">
-    <button id="ren">ตั้งชื่อ</button><button id="del" class="warn">ลบที่เลือก</button>
-    <button id="los">ตรวจแนวสายตา</button><button id="gps">วางที่ตำแหน่งฉัน</button>
-    <button id="pan" data-t="">เลื่อนดู</button><button id="grid">เส้นกริด</button><button id="pinx">ล้างหมุด</button>
+    <select id="aff"><option value="F">ฝ่ายเรา</option><option value="H">ข้าศึก</option><option value="N">เป็นกลาง</option><option value="U">ไม่ทราบ</option></select>
+    <select id="ech"><option value="-">ไม่ระบุขนาด</option><option value="B">หมู่</option><option value="D">หมวด</option><option value="E">กองร้อย</option><option value="F">กองพัน</option><option value="G">กรม</option><option value="H">กองพลน้อย</option><option value="I">กองพล</option></select>
   </div>
-  <div id="info">เลือกประเภทด้านล่าง แล้วแตะแผนที่เพื่อวาง แตะสัญลักษณ์เพื่อเลือก (เลือกได้ 2 จุด) ลากเพื่อย้าย</div>
+  <div class="row"><select id="utype">
+    <option value="UCI---">ทหารราบ</option><option value="UCA---">ยานเกราะ</option>
+    <option value="UCFH--">ปืนใหญ่</option><option value="UCFM--">ค./ปืนเล็กใหญ่</option>
+    <option value="UCR---">ลาดตระเวน</option><option value="UCE---">ช่าง</option>
+    <option value="UCD---">ต่อสู้อากาศยาน</option><option value="UCV---">การบินทหารบก</option>
+    <option value="USS---">ส่งกำลังบำรุง</option><option value="USM---">แพทย์</option>
+  </select></div>
+  <div class="row"><input id="uname" type="text" placeholder="ชื่อหน่วย เช่น ร.1" size="12"><button id="bunit" data-t="unit">วางหน่วย</button></div>
+  <div class="row"><button id="bpk">สัญลักษณ์ทั้งหมด…</button><button id="bpkx">รายการสั้น</button></div>
+  <div class="row"><span id="prev" style="display:inline-flex;align-items:center;gap:6px"></span></div>
+  <details><summary>ขั้นสูง: ใส่รหัส SIDC เอง</summary><div class="row"><input id="sidc" type="text" placeholder="SFGPUCI----D---" size="18"></div></details>
+</div>
 
-  <details open><summary>หน่วย (สัญลักษณ์ APP-6 / MIL-STD-2525)</summary>
-    <div class="row">
-      <select id="aff"><option value="F">ฝ่ายเรา</option><option value="H">ข้าศึก</option><option value="N">เป็นกลาง</option><option value="U">ไม่ทราบ</option></select>
-      <select id="utype">
-        <option value="UCI---">ทหารราบ</option><option value="UCA---">ยานเกราะ</option>
-        <option value="UCFH--">ปืนใหญ่ (ปืนใหญ่/ครก)</option><option value="UCFM--">ค./ปืนเล็กใหญ่</option>
-        <option value="UCR---">ลาดตระเวน</option><option value="UCE---">ช่าง</option>
-        <option value="UCD---">ต่อสู้อากาศยาน</option><option value="UCV---">การบินทหารบก</option>
-        <option value="USS---">ส่งกำลังบำรุง</option><option value="USM---">แพทย์</option>
-      </select>
-      <select id="ech"><option value="-">ไม่ระบุขนาด</option><option value="B">หมู่</option><option value="D">หมวด</option><option value="E">กองร้อย/กองร้อยปืนใหญ่</option><option value="F">กองพัน</option><option value="G">กรม</option><option value="H">กองพลน้อย</option><option value="I">กองพล</option></select>
-      <input id="uname" type="text" placeholder="ชื่อหน่วย เช่น ร.1" size="10">
-      <button id="bunit" data-t="unit">วางหน่วย</button>
-    </div>
-    <div class="row"><span>รหัส SIDC เอง</span><input id="sidc" type="text" placeholder="เช่น SFGPUCI----D---" size="18"><span>(กรอกแล้วจะใช้แทนตัวเลือกด้านบน)</span></div>
-  </details>
+<div class="dr" id="dr-points" hidden>
+  <div class="drh"><span>จุดปฏิบัติการ / วงยิง</span><button class="x" data-close>✕</button></div>
+  <div class="row" id="types"></div>
+  <div class="row"><span>ระยะยิง ต่ำสุด</span><input id="rmin" type="number" min="0" step="0.5" value="1"><span>สูงสุด</span><input id="rmax" type="number" min="0" step="0.5" value="10"><span>กม.</span></div>
+  <div class="hint">วงรัศมีขึ้นรอบ "ที่ตั้งยิง" และหน่วยปืนใหญ่ (ค่าตัวอย่าง แก้ตามอาวุธ)</div>
+</div>
 
-  <details open><summary>วางด้วยพิกัด (MGRS หรือ ละติจูด,ลองจิจูด)</summary>
-    <div class="row"><input id="mg" type="text" placeholder="47P PS 75818 44038 หรือ 14.44,101.37" size="32"><button id="mgp">วางที่พิกัด</button><button id="mgo">ไปที่พิกัด</button></div>
-    <div class="row"><span>"วางที่พิกัด" วางตามประเภทที่เลือกอยู่ (ถ้าไม่ได้เลือกจะวางเป็นฝ่ายเรา) พิกัดอ้างอิง WGS84 ตำแหน่งกลางจอแสดงที่แถบบนสุด</span></div>
-  </details>
+<div class="dr" id="dr-lines" hidden>
+  <div class="drh"><span>เส้น / แนว</span><button class="x" data-close>✕</button></div>
+  <div class="row">
+    <select id="lcol"><option value="#3b82f6">น้ำเงิน (ฝ่ายเรา)</option><option value="#ef4444">แดง (ข้าศึก)</option><option value="#facc15">เหลือง (แนวประสาน)</option><option value="#f8fafc">ขาว</option></select>
+    <select id="ldash"><option value="">เส้นทึบ</option><option value="1">เส้นประ</option></select>
+  </div>
+  <div class="row"><button id="bline" data-t="line">วาดเส้น</button><button id="lend">จบเส้น</button><button id="lundo">ย้อน/ลบล่าสุด</button></div>
+  <div class="hint">แตะแผนที่ทีละจุด แล้วกด "จบเส้น"</div>
+</div>
 
-  <details><summary>จุดปฏิบัติการ / วงรัศมียิง</summary>
-    <div class="row" id="types"></div>
-    <div class="row"><span>ระยะยิงต่ำสุด</span><input id="rmin" type="number" min="0" step="0.5" value="1"><span>สูงสุด</span><input id="rmax" type="number" min="0" step="0.5" value="10"><span>กม. (ตัวอย่าง วงรอบ "ที่ตั้งยิง" และหน่วยปืนใหญ่)</span></div>
-  </details>
+<div class="dr" id="dr-coord" hidden>
+  <div class="drh"><span>วาง/ไปที่พิกัด</span><button class="x" data-close>✕</button></div>
+  <div class="row"><input id="mg" type="text" placeholder="47P PS 75818 44038 หรือ 14.44,101.37" style="width:100%"></div>
+  <div class="row"><button id="mgp">วางที่พิกัด</button><button id="mgo">ไปที่พิกัด</button></div>
+  <div class="hint">วางตามประเภทที่เลือกอยู่ (ไม่ได้เลือกจะเป็นฝ่ายเรา) อ้างอิง WGS84</div>
+</div>
 
-  <details><summary>แนว / เส้น (แนวต้าน ทิศทางรุก เขตแบ่ง)</summary>
-    <div class="row">
-      <select id="lcol"><option value="#3b82f6">น้ำเงิน (ฝ่ายเรา)</option><option value="#ef4444">แดง (ข้าศึก)</option><option value="#facc15">เหลือง (แนวประสาน)</option><option value="#f8fafc">ขาว</option></select>
-      <select id="ldash"><option value="">เส้นทึบ</option><option value="1">เส้นประ</option></select>
-      <button id="bline" data-t="line">วาดเส้น (แตะทีละจุด)</button><button id="lend">จบเส้น</button><button id="lundo">ย้อน/ลบเส้นล่าสุด</button>
-    </div>
-  </details>
+<div class="dr" id="dr-more" hidden>
+  <div class="drh"><span>เพิ่มเติม</span><button class="x" data-close>✕</button></div>
+  <div class="row"><span>ภูมิประเทศ</span><input id="ex" type="range" min="1" max="3" step="0.1" value="1.3"></div>
+  <div class="row"><select id="bm"><option value="osm">แผนที่ถนน</option><option value="sat">ดาวเทียม</option></select>
+    <select id="gsp"><option value="auto">กริด: อัตโนมัติ</option><option value="100">กริด 100 ม.</option><option value="1000">กริด 1 กม.</option><option value="10000">กริด 10 กม.</option><option value="100000">กริด 100 กม.</option></select></div>
+  <div class="row"><button id="pinx">ล้างหมุด</button><button id="exp">ส่งออกไฟล์</button><label class="btn">นำเข้าไฟล์<input id="imp" type="file" accept=".json,application/json" hidden></label></div>
+  <div class="row"><button id="clr" class="warn">ล้างทั้งหมด</button></div>
+</div>
 
-  <details><summary>มุมมอง / ไฟล์</summary>
-    <div class="row"><span>ภูมิประเทศ</span><input id="ex" type="range" min="1" max="3" step="0.1" value="1.3">
-      <select id="bm"><option value="osm">แผนที่ถนน</option><option value="sat">ดาวเทียม</option></select></div>
-    <div class="row"><span>ระยะห่างเส้นกริด</span><select id="gsp"><option value="auto">อัตโนมัติ</option><option value="100">100 ม.</option><option value="1000">1 กม.</option><option value="10000">10 กม.</option><option value="100000">100 กม.</option></select></div>
-    <div class="row"><button id="exp">ส่งออกไฟล์</button><label class="btn">นำเข้าไฟล์<input id="imp" type="file" accept=".json,application/json" hidden></label><button id="clr" class="warn">ล้างทั้งหมด</button></div>
-  </details>
+<div id="bot">
+  <div id="selbar" hidden><button id="ren">ตั้งชื่อ</button><button id="los" hidden>ตรวจแนวสายตา</button><button id="del" class="warn">ลบ</button><button id="desel">เลิกเลือก</button></div>
+  <div id="card" hidden><span id="info"></span><button class="x" id="cardx">✕</button></div>
+</div>
+<div id="pk" hidden>
+  <div class="pkh"><b>เลือกสัญลักษณ์ทางทหาร (APP-6 / MIL-STD-2525)</b><button id="pkclose">ปิด</button></div>
+  <div class="row" id="pkd"></div>
+  <div class="row" id="pkc"></div>
+  <div id="pkg"></div>
+  <div class="pkf"><span id="pkp" style="display:inline-flex;align-items:center;gap:8px"></span><button id="pkok" class="on">ใช้สัญลักษณ์นี้</button></div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/milsymbol@2.2.0/dist/milsymbol.js"></script>
@@ -163,7 +208,9 @@ async function elevAt(p){
   return v(i,j)*(1-fx)*(1-fy)+v(i+1,j)*fx*(1-fy)+v(i,j+1)*(1-fx)*fy+v(i+1,j+1)*fx*fy;
 }
 const fmt=p=>p.lat.toFixed(5)+', '+p.lng.toFixed(5);
-const say=t=>{$('info').textContent=t};
+let cardT;
+const say=t=>{$('info').textContent=t;$('card').hidden=false;clearTimeout(cardT);cardT=setTimeout(()=>{$('card').hidden=true},30000)};
+function selUi(){$('selbar').hidden=!sel.length;$('los').hidden=sel.length<2;$('ren').hidden=sel.length!==1}
 
 // ---- MGRS ----
 const WA=6378137,WF=1/298.257223563,K0=0.9996,E2=WF*(2-WF),EP2=E2/(1-E2);
@@ -254,6 +301,42 @@ function drawGrid(){
   src.setData({type:'FeatureCollection',features:F});
 }
 // ---- /GRID ----
+
+// ---- PICK ----
+const AZ='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const DIMS={
+  G:['ภาคพื้นดิน',[['U','หน่วย'],['E','ยุทโธปกรณ์'],['I','สิ่งปลูกสร้าง']]],
+  A:['อากาศ',[['M','ทางทหาร'],['C','พลเรือน'],['W','อาวุธ']]],
+  S:['ทะเลผิวน้ำ',[['C','เรือรบ'],['N','ไม่ใช่เรือรบ'],['X','อื่นๆ']]],
+  U:['ใต้น้ำ',[['S','เรือดำน้ำ'],['W','อาวุธ'],['N','อื่นๆ']]],
+  P:['อวกาศ',[['S','ดาวเทียม'],['V','ยานอวกาศ']]],
+  F:['ทหารพิเศษ',[['A','การบิน'],['G','ภาคพื้นดิน'],['N','ทางเรือ']]]
+};
+const sigCache={};
+const pad6=c=>c.padEnd(6,'-');
+function sig(dim,code){
+  const f=pad6(code),k=dim+f;
+  if(!(k in sigCache)){let s='';try{s=new ms.Symbol('SF'+dim+'P'+f+'--'+'---',{size:20}).asSVG()}catch(e){}sigCache[k]=s}
+  return sigCache[k];
+}
+// รายการหมวดย่อยของรหัส path (ตัวกรอง: เฉพาะรหัสที่ไลบรารีวาดไอคอนได้จริง)
+function kids(dim,path){
+  if(path.length>=6)return [];
+  const base=sig(dim,path[0]),par=sig(dim,path),out=[];
+  for(const L of AZ){
+    const code=path+L;
+    if(code.length===2){
+      const own=sig(dim,code)!==base;let rep=own?code:null;
+      for(let i=0;i<26&&!rep;i++){const c3=code+AZ[i];if(sig(dim,c3)!==base)rep=c3}
+      if(rep)out.push({code,rep,group:true});
+    }else{
+      const s=sig(dim,code);
+      if(s!==base&&s!==par)out.push({code,rep:code});
+    }
+  }
+  return out;
+}
+// ---- /PICK ----
 const nameOf=i=>T[i.type][1]+(i.name?' '+i.name:'')+' #'+i.id;
 
 // ---------- symbols ----------
@@ -283,6 +366,7 @@ function pick(it){
   const k=sel.indexOf(it);
   if(k>=0)sel.splice(k,1);else{sel.push(it);if(sel.length>2)sel.shift()}
   items.forEach(i=>i.el.firstChild.classList.toggle('sel',sel.includes(i)));
+  selUi();
   sel.length?show():say('ยังไม่ได้เลือกสัญลักษณ์');
 }
 let showTok=0;
@@ -296,16 +380,51 @@ async function show(){
     t+='\nระยะ '+dist(a,b).toFixed(2)+' กม.  ทิศ '+mils(brg(a,b))+' มิล';}
   say(t);
 }
+let symPick=null,pkDim='G',pkPath='',pkTok=0;
 function unitSidc(){
   const c=$('sidc').value.trim().toUpperCase();
-  return c||('S'+$('aff').value+'GP'+$('utype').value+'-'+$('ech').value+'---');
+  if(c)return c;
+  if(symPick)return 'S'+$('aff').value+symPick.dim+'P'+pad6(symPick.code)+'-'+(symPick.dim==='G'||symPick.dim==='F'?$('ech').value:'-')+'---';
+  return 'S'+$('aff').value+'GP'+$('utype').value+'-'+$('ech').value+'---';
 }
-
+function symSvg(sidc,size){try{return typeof ms!=='undefined'?new ms.Symbol(sidc,{size}).asSVG():''}catch(e){return ''}}
+function updatePrev(){
+  const s=unitSidc();
+  $('prev').innerHTML=symSvg(s,30)+'<small>'+esc(s)+(symPick?' (จากรายการทั้งหมด)':'')+'</small>';
+  $('pkp').innerHTML=symSvg(s,34)+'<small>'+esc(s)+'</small>';
+}
+const mkBtn=(t,f,on)=>{const b=document.createElement('button');b.textContent=t;if(on)b.className='on';b.onclick=f;return b};
+function pkRender(){
+  const tok=++pkTok,d=$('pkd'),c=$('pkc'),g=$('pkg');
+  d.innerHTML='';Object.keys(DIMS).forEach(k=>d.appendChild(mkBtn(DIMS[k][0],()=>{pkDim=k;pkPath='';pkRender()},k===pkDim)));
+  c.innerHTML='';c.appendChild(mkBtn('ทั้งหมด',()=>{pkPath='';pkRender()}));
+  for(let i=1;i<=pkPath.length;i++){const q=pkPath.slice(0,i);c.appendChild(mkBtn(q,()=>{pkPath=q;pkRender()},i===pkPath.length))}
+  if(typeof ms==='undefined'){g.textContent='โหลดไลบรารีสัญลักษณ์ไม่สำเร็จ ตรวจอินเทอร์เน็ตแล้วรีเฟรช';return}
+  const tile=(label,code,rep,onclick,on)=>{
+    const b=document.createElement('button');b.className='tile'+(on?' on':'');
+    b.innerHTML='<div class="sym">'+symSvg('S'+$('aff').value+pkDim+'P'+pad6(rep)+'--'+'---',34)+'</div>'+esc(label);
+    b.onclick=onclick;return b;
+  };
+  g.innerHTML='กำลังโหลดรายการ...';
+  setTimeout(()=>{
+    if(tok!==pkTok)return;
+    g.innerHTML='';
+    if(!pkPath){
+      DIMS[pkDim][1].forEach(([L,name])=>g.appendChild(tile(L+' '+name,L,L,()=>{pkPath=L;pkRender()},false)));
+      return;
+    }
+    const ks=kids(pkDim,pkPath);
+    if(!ks.length){g.textContent='ไม่มีหมวดย่อยแล้ว กด "ใช้สัญลักษณ์นี้" ได้เลย';return}
+    ks.forEach(k=>g.appendChild(tile(k.code+(k.group?' ▸':''),k.code,k.rep,()=>{
+      pkPath=k.code;symPick={dim:pkDim,code:k.group?k.rep:k.code};updatePrev();pkRender();
+    },symPick&&symPick.dim===pkDim&&symPick.code===k.code)));
+  },20);
+}
 // ---------- save / load ----------
 const dump=()=>({items:items.map(i=>({t:i.type,s:i.sidc,n:i.name,p:i.m.getLngLat().toArray()})),lines});
 function save(){try{localStorage.setItem('sit',JSON.stringify(dump()))}catch(e){}}
 function load(d){
-  items.forEach(i=>i.m.remove());items=[];sel=[];lines=d.lines||[];
+  items.forEach(i=>i.m.remove());items=[];sel=[];selUi();lines=d.lines||[];
   (d.items||[]).forEach(o=>{if(T[o.t])add(o.t,o.p[0],o.p[1],{sidc:o.s,name:o.n})});
   drawLines();rings();save();
 }
@@ -396,8 +515,9 @@ document.querySelectorAll('[data-t]').forEach(b=>{
 });
 function setMode(k){
   mode=k;
-  document.querySelectorAll('[data-t]').forEach(b=>b.classList.toggle('on',!!k&&b.dataset.t===k));
+  document.querySelectorAll('[data-t]').forEach(b=>b.classList.toggle('on',k?b.dataset.t===k:b.id==='pan'));
   map.getCanvas().style.cursor=k?'crosshair':'';
+  $('mt').textContent=k?'โหมด: '+(k==='unit'?'วางหน่วย':k==='line'?'วาดเส้น':'วาง'+T[k][1]):'';
   say(!k?'โหมดเลื่อนดู':k==='line'?'แตะแผนที่ทีละจุด แล้วกด "จบเส้น"':k==='unit'?'แตะบนแผนที่เพื่อวางหน่วย':'แตะบนแผนที่เพื่อวาง: '+T[k][1]);
 }
 map.on('click',e=>{
@@ -429,12 +549,12 @@ $('ren').onclick=()=>{
   sel[0].name=n;render(sel[0]);save();show();
 };
 $('del').onclick=()=>{
-  sel.forEach(i=>i.m.remove());items=items.filter(i=>!sel.includes(i));sel=[];
+  sel.forEach(i=>i.m.remove());items=items.filter(i=>!sel.includes(i));sel=[];selUi();
   rings();save();clearLos();say('ลบแล้ว');
 };
 $('clr').onclick=()=>{
   if(!confirm('ล้างสัญลักษณ์และเส้นทั้งหมด?'))return;
-  items.forEach(i=>i.m.remove());items=[];sel=[];lines=[];cur=[];
+  items.forEach(i=>i.m.remove());items=[];sel=[];selUi();lines=[];cur=[];
   rings();drawLines();save();clearLos();say('ล้างแล้ว');
 };
 $('ex').oninput=e=>{ex=+e.target.value;map.setTerrain({source:'dem',exaggeration:ex})};
@@ -442,7 +562,6 @@ $('bm').onchange=e=>{
   map.setLayoutProperty('osm','visibility',e.target.value==='osm'?'visible':'none');
   map.setLayoutProperty('sat','visibility',e.target.value==='sat'?'visible':'none');
 };
-$('tg').onclick=()=>{$('panel').hidden=!$('panel').hidden};
 $('exp').onclick=()=>{
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([JSON.stringify(dump())],{type:'application/json'}));
@@ -454,6 +573,32 @@ $('imp').onchange=e=>{
   r.onload=()=>{try{load(JSON.parse(r.result));say('นำเข้าแล้ว')}catch(x){say('ไฟล์ไม่ถูกต้อง')}};
   r.readAsText(f);e.target.value='';
 };
+
+// ---------- ตัวเลือกสัญลักษณ์ทั้งหมด ----------
+$('bpk').onclick=()=>{$('pk').hidden=false;pkRender();updatePrev()};
+$('pkclose').onclick=()=>{$('pk').hidden=true};
+$('pkok').onclick=()=>{$('pk').hidden=true;updatePrev();setMode('unit')};
+$('bpkx').onclick=()=>{symPick=null;$('sidc').value='';updatePrev()};
+['aff','ech','sidc'].forEach(i=>$(i).addEventListener('input',updatePrev));
+['aff','ech'].forEach(i=>$(i).addEventListener('change',()=>{updatePrev();if(!$('pk').hidden)pkRender()}));
+$('utype').addEventListener('change',()=>{symPick=null;updatePrev()});
+window.addEventListener('load',updatePrev);
+
+// ---------- แถบเครื่องมือ / ลิ้นชัก ----------
+const DRW={'rb-units':['dr-units','unit'],'rb-points':['dr-points',null],'rb-lines':['dr-lines','line'],'rb-coord':['dr-coord',null],'rb-more':['dr-more',null]};
+function closeDr(){document.querySelectorAll('.dr').forEach(d=>d.hidden=true);Object.keys(DRW).forEach(k=>$(k).classList.remove('on'))}
+Object.keys(DRW).forEach(k=>{
+  $(k).onclick=()=>{
+    const id=DRW[k][0],m=DRW[k][1],was=!$(id).hidden;
+    closeDr();
+    if(!was){$(id).hidden=false;$(k).classList.add('on');if(m)setMode(m)}
+  };
+});
+document.querySelectorAll('.dr [data-close]').forEach(b=>b.onclick=closeDr);
+$('pan').addEventListener('click',closeDr);
+$('cardx').onclick=()=>{$('card').hidden=true};
+$('desel').onclick=()=>{sel=[];items.forEach(i=>i.el.firstChild.classList.remove('sel'));selUi();$('card').hidden=true};
+setTimeout(()=>say('แตะแผนที่เพื่อปักหมุดดูพิกัดและความสูง ใช้แถบซ้ายเลือกเครื่องมือ'),300);
 
 // ---------- GPS ----------
 $('gps').onclick=()=>{
