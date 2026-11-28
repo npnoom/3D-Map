@@ -544,8 +544,8 @@ const readMg=()=>{
   if(!p||Math.abs(p.lat)>84||Math.abs(p.lng)>180){say('พิกัดไม่ถูกต้อง ตัวอย่าง 47P PS 75818 44038 หรือ 14.44,101.37');return null}
   return p;
 };
-$('mgp').onclick=()=>{const p=readMg();if(!p)return;putAt(p);map.flyTo({center:[p.lng,p.lat],zoom:Math.max(map.getZoom(),15)});say('วางที่ '+mgrs(p)+'\n'+fmt(p))};
-$('mgo').onclick=()=>{const p=readMg();if(!p)return;map.flyTo({center:[p.lng,p.lat],zoom:Math.max(map.getZoom(),15)});say('ไปที่ '+mgrs(p)+'\n'+fmt(p))};
+$('mgp').onclick=()=>{const p=readMg();if(!p)return;putAt(p);centerOn([p.lng,p.lat],Math.max(map.getZoom(),15));say('วางที่ '+mgrs(p)+'\n'+fmt(p))};
+$('mgo').onclick=()=>{const p=readMg();if(!p)return;centerOn([p.lng,p.lat],Math.max(map.getZoom(),15));say('ไปที่ '+mgrs(p)+'\n'+fmt(p))};
 $('ren').onclick=()=>{
   if(sel.length!==1)return say('เลือกสัญลักษณ์ 1 จุดก่อน');
   const n=prompt('ชื่อ/หน่วย',sel[0].name);if(n===null)return;
@@ -611,6 +611,18 @@ function showMe(c){
   else meM.setLngLat(ll);
   map.getSource('me')?.setData({type:'FeatureCollection',features:[{type:'Feature',properties:{},geometry:{type:'Polygon',coordinates:[circle(ll,Math.max(c.accuracy,1)/1000)]}}]});
 }
+let cTok=0;
+// เลื่อนแผนที่ให้จุดอยู่กลางจอจริง แม้เปิดภูมิประเทศ 3D และมุมเอียง: เลื่อนแล้ววัดตำแหน่งบนจอ ชดเชยซ้ำหลังไทล์โหลดเสร็จ
+function centerOn(ll,zoom){
+  const tok=++cTok;let n=0;
+  const fix=()=>{
+    if(tok!==cTok)return;
+    const c=map.getCanvas(),sp=map.project(ll),dx=sp.x-c.clientWidth/2,dy=sp.y-c.clientHeight/2;
+    if((Math.abs(dx)>3||Math.abs(dy)>3)&&n++<3){map.panBy([dx,dy],{duration:250});map.once('idle',fix)}
+  };
+  map.easeTo({center:ll,zoom,duration:500});
+  map.once('idle',fix);
+}
 $('gps').onclick=()=>{
   if(!navigator.geolocation)return say('เครื่องนี้ไม่รองรับ GPS');
   if(gpsW!==null){navigator.geolocation.clearWatch(gpsW);gpsW=null}
@@ -629,7 +641,7 @@ $('gps').onclick=()=>{
     const c=p.coords;
     if(!best||c.accuracy<best.coords.accuracy){
       best=p;showMe(c);
-      map.easeTo({center:[c.longitude,c.latitude],zoom:first?Math.max(map.getZoom(),c.accuracy>100?14:16):map.getZoom(),duration:500});
+      centerOn([c.longitude,c.latitude],first?Math.max(map.getZoom(),c.accuracy>100?14:16):map.getZoom());
       first=false;
     }
     say('กำลังหาตำแหน่ง '+Math.round((Date.now()-t0)/1000)+' วินาที  ดีที่สุด ±'+Math.round(best.coords.accuracy)+' ม.\n'+mgrs({lat:best.coords.latitude,lng:best.coords.longitude}));
