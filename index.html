@@ -34,17 +34,18 @@ input[type=number]{width:64px}
 .mk.tgt{background:#ea580c;border-radius:50%;width:34px;height:34px}
 .sym svg{display:block;filter:drop-shadow(0 1px 3px #000a)}
 .sel{outline:3px solid #fbbf24;outline-offset:2px}
+.gl{background:rgba(0,0,0,.65);color:#fde047;font:600 11px system-ui,sans-serif;padding:0 4px;border-radius:3px;pointer-events:none}
 .cap{position:absolute;left:50%;top:100%;transform:translateX(-50%);white-space:nowrap;color:#fff;font:600 11px system-ui,sans-serif;text-shadow:0 0 3px #000,0 0 3px #000,0 0 3px #000;pointer-events:none}
 </style>
 </head>
 <body>
 <div id="map"></div>
-<div class="top"><span>แผนที่สถานการณ์ 3D<em>ต้นแบบ ห้ามใส่ข้อมูลจริง</em></span><button id="tg">เมนู</button></div>
+<div class="top"><span>แผนที่สถานการณ์ 3D<em>ต้นแบบ ห้ามใส่ข้อมูลจริง</em></span><span id="mgc" style="font-size:12px;color:#d1fae5"></span><button id="tg">เมนู</button></div>
 <div class="panel" id="panel">
   <div class="row">
     <button id="ren">ตั้งชื่อ</button><button id="del" class="warn">ลบที่เลือก</button>
     <button id="los">ตรวจแนวสายตา</button><button id="gps">วางที่ตำแหน่งฉัน</button>
-    <button id="pan" data-t="">เลื่อนดู</button>
+    <button id="pan" data-t="">เลื่อนดู</button><button id="grid">เส้นกริด</button>
   </div>
   <div id="info">เลือกประเภทด้านล่าง แล้วแตะแผนที่เพื่อวาง แตะสัญลักษณ์เพื่อเลือก (เลือกได้ 2 จุด) ลากเพื่อย้าย</div>
 
@@ -65,6 +66,11 @@ input[type=number]{width:64px}
     <div class="row"><span>รหัส SIDC เอง</span><input id="sidc" type="text" placeholder="เช่น SFGPUCI----D---" size="18"><span>(กรอกแล้วจะใช้แทนตัวเลือกด้านบน)</span></div>
   </details>
 
+  <details open><summary>วางด้วยพิกัด (MGRS หรือ ละติจูด,ลองจิจูด)</summary>
+    <div class="row"><input id="mg" type="text" placeholder="47P PS 75818 44038 หรือ 14.44,101.37" size="32"><button id="mgp">วางที่พิกัด</button><button id="mgo">ไปที่พิกัด</button></div>
+    <div class="row"><span>"วางที่พิกัด" วางตามประเภทที่เลือกอยู่ (ถ้าไม่ได้เลือกจะวางเป็นฝ่ายเรา) พิกัดอ้างอิง WGS84 ตำแหน่งกลางจอแสดงที่แถบบนสุด</span></div>
+  </details>
+
   <details><summary>จุดปฏิบัติการ / วงรัศมียิง</summary>
     <div class="row" id="types"></div>
     <div class="row"><span>ระยะยิงต่ำสุด</span><input id="rmin" type="number" min="0" step="0.5" value="1"><span>สูงสุด</span><input id="rmax" type="number" min="0" step="0.5" value="10"><span>กม. (ตัวอย่าง วงรอบ "ที่ตั้งยิง" และหน่วยปืนใหญ่)</span></div>
@@ -81,6 +87,7 @@ input[type=number]{width:64px}
   <details><summary>มุมมอง / ไฟล์</summary>
     <div class="row"><span>ภูมิประเทศ</span><input id="ex" type="range" min="1" max="3" step="0.1" value="1.3">
       <select id="bm"><option value="osm">แผนที่ถนน</option><option value="sat">ดาวเทียม</option></select></div>
+    <div class="row"><span>ระยะห่างเส้นกริด</span><select id="gsp"><option value="auto">อัตโนมัติ</option><option value="100">100 ม.</option><option value="1000">1 กม.</option><option value="10000">10 กม.</option><option value="100000">100 กม.</option></select></div>
     <div class="row"><button id="exp">ส่งออกไฟล์</button><label class="btn">นำเข้าไฟล์<input id="imp" type="file" accept=".json,application/json" hidden></label><button id="clr" class="warn">ล้างทั้งหมด</button></div>
   </details>
 </div>
@@ -112,7 +119,8 @@ map.addControl(new maplibregl.GeolocateControl({positionOptions:{enableHighAccur
 const empty={type:'FeatureCollection',features:[]};
 map.on('load',()=>{
   map.setTerrain({source:'dem',exaggeration:ex});
-  ['rings','los','lines'].forEach(s=>map.addSource(s,{type:'geojson',data:empty}));
+  ['rings','los','lines','grid'].forEach(s=>map.addSource(s,{type:'geojson',data:empty}));
+  map.addLayer({id:'grid-a',type:'line',source:'grid',paint:{'line-color':'#fde047','line-opacity':0.6,'line-width':['case',['get','m'],2.2,1]}});
   map.addLayer({id:'ring-max',type:'line',source:'rings',filter:['==',['get','k'],'max'],paint:{'line-color':'#f59e0b','line-width':2.5}});
   map.addLayer({id:'ring-min',type:'line',source:'rings',filter:['==',['get','k'],'min'],paint:{'line-color':'#fde68a','line-width':2,'line-dasharray':[2,2]}});
   map.addLayer({id:'lines-s',type:'line',source:'lines',filter:['!',['to-boolean',['get','d']]],paint:{'line-color':['get','c'],'line-width':3.5}});
@@ -139,6 +147,96 @@ function circle(c,km,n=96){const R=6371,la0=rad(c[1]),lo0=rad(c[0]),d=km/R,pts=[
 const h=p=>((map.queryTerrainElevation(p)??0)/ex);
 const fmt=p=>p.lat.toFixed(5)+', '+p.lng.toFixed(5);
 const say=t=>{$('info').textContent=t};
+
+// ---- MGRS ----
+const WA=6378137,WF=1/298.257223563,K0=0.9996,E2=WF*(2-WF),EP2=E2/(1-E2);
+const BANDS='CDEFGHJKLMNPQRSTUVWX',COLS=['ABCDEFGH','JKLMNPQR','STUVWXYZ'],ROWS='ABCDEFGHJKLMNPQRSTUV';
+function toUTM(lat,lon,zf){
+  const zone=zf||Math.floor((lon+180)/6)+1,lon0=rad((zone-1)*6-180+3),phi=rad(lat),lam=rad(lon)-lon0;
+  const s=Math.sin(phi),c=Math.cos(phi),t=Math.tan(phi);
+  const N=WA/Math.sqrt(1-E2*s*s),T=t*t,C=EP2*c*c,A=c*lam,e4=E2*E2,e6=e4*E2;
+  const M=WA*((1-E2/4-3*e4/64-5*e6/256)*phi-(3*E2/8+3*e4/32+45*e6/1024)*Math.sin(2*phi)+(15*e4/256+45*e6/1024)*Math.sin(4*phi)-(35*e6/3072)*Math.sin(6*phi));
+  const E=K0*N*(A+(1-T+C)*A**3/6+(5-18*T+T*T+72*C-58*EP2)*A**5/120)+500000;
+  let Nn=K0*(M+N*t*(A*A/2+(5-T+9*C+4*C*C)*A**4/24+(61-58*T+T*T+600*C-330*EP2)*A**6/720));
+  if(lat<0)Nn+=1e7;
+  return {zone,E,N:Nn};
+}
+function fromUTM(zone,E,N,south){
+  const e1=(1-Math.sqrt(1-E2))/(1+Math.sqrt(1-E2)),e4=E2*E2,e6=e4*E2;
+  const x=E-500000,y=south?N-1e7:N,mu=(y/K0)/(WA*(1-E2/4-3*e4/64-5*e6/256));
+  const p1=mu+(3*e1/2-27*e1**3/32)*Math.sin(2*mu)+(21*e1**2/16-55*e1**4/32)*Math.sin(4*mu)+(151*e1**3/96)*Math.sin(6*mu)+(1097*e1**4/512)*Math.sin(8*mu);
+  const s=Math.sin(p1),c=Math.cos(p1),t=Math.tan(p1);
+  const N1=WA/Math.sqrt(1-E2*s*s),T1=t*t,C1=EP2*c*c,R1=WA*(1-E2)/Math.pow(1-E2*s*s,1.5),D=x/(N1*K0);
+  const lat=p1-(N1*t/R1)*(D*D/2-(5+3*T1+10*C1-4*C1*C1-9*EP2)*D**4/24+(61+90*T1+298*C1+45*T1*T1-252*EP2-3*C1*C1)*D**6/720);
+  const lon=(D-(1+2*T1+C1)*D**3/6+(5-2*C1+28*T1-3*C1*C1+8*EP2+24*T1*T1)*D**5/120)/c;
+  return {lat:deg(lat),lng:deg(lon)+(zone-1)*6-180+3};
+}
+function mgrs(p){
+  if(p.lat<-80||p.lat>84)return 'นอกช่วง MGRS';
+  const u=toUTM(p.lat,p.lng);u.E+=0.01;u.N+=0.01;const band=BANDS[Math.min(19,Math.floor((p.lat+80)/8))];
+  const col=COLS[(u.zone-1)%3][Math.floor(u.E/1e5)-1],row=ROWS[(Math.floor(u.N/1e5)+(u.zone%2?0:5))%20];
+  const e=String(Math.floor(u.E%1e5)).padStart(5,'0'),n=String(Math.floor(u.N%1e5)).padStart(5,'0');
+  return String(u.zone).padStart(2,'0')+band+' '+col+row+' '+e+' '+n;
+}
+function parseCoord(s){
+  s=s.trim().toUpperCase();
+  let m=s.match(/^(-?\d+(?:\.\d+)?)\s*[,;\s]\s*(-?\d+(?:\.\d+)?)$/);
+  if(m)return {lat:+m[1],lng:+m[2]};
+  m=s.replace(/\s+/g,'').match(/^(\d{1,2})([C-HJ-NP-X])([A-HJ-NP-Z])([A-HJ-NP-V])(\d*)$/);
+  if(!m||m[5].length%2)return null;
+  const zone=+m[1],colI=COLS[(zone-1)%3]?COLS[(zone-1)%3].indexOf(m[3]):-1,rowI=ROWS.indexOf(m[4]);
+  if(zone<1||zone>60||colI<0)return null;
+  const k=m[5].length/2,cell=Math.pow(10,5-k),half=k<5?cell/2:0;
+  const e=k?+m[5].slice(0,k):0,n=k?+m[5].slice(k):0;
+  const E=(colI+1)*1e5+e*cell+half,N0=((rowI-(zone%2?0:5)+20)%20)*1e5+n*cell+half;
+  const bi=BANDS.indexOf(m[2]),Nmin=toUTM(bi*8-80,(zone-1)*6-180+3).N;
+  return fromUTM(zone,E,N0+Math.ceil((Nmin-200000-N0)/2e6)*2e6,bi<10);
+}
+// ---- /MGRS ----
+
+// ---- GRID ----
+let gridOn=false,gl=[];
+function drawGrid(){
+  const src=map.getSource('grid');if(!src)return;
+  gl.forEach(m=>m.remove());gl=[];
+  if(!gridOn){src.setData(empty);return}
+  const c=map.getCanvas(),w=c.clientWidth,hh=c.clientHeight,ctr=map.getCenter();
+  if(Math.abs(ctr.lat)>80){src.setData(empty);return}
+  const zone=toUTM(ctr.lat,ctr.lng).zone,south=ctr.lat<0;
+  const us=[[0,.3],[1,.3],[0,1],[1,1],[.5,.65]].map(f=>{const q=map.unproject([f[0]*w,f[1]*hh]);return toUTM(q.lat,q.lng,zone)});
+  let E0=Math.min(...us.map(u=>u.E)),E1=Math.max(...us.map(u=>u.E)),N0=Math.min(...us.map(u=>u.N)),N1=Math.max(...us.map(u=>u.N));
+  const mE=(E1-E0)*.05,mN=(N1-N0)*.05;E0-=mE;E1+=mE;N0-=mN;N1+=mN;
+  const sv=$('gsp').value;let s=+sv;
+  if(sv==='auto')s=[100,1000,10000,100000].find(x=>(E1-E0)/x<=50&&(N1-N0)/x<=50)||100000;
+  else if((E1-E0)/s>120||(N1-N0)/s>120){src.setData(empty);say('เส้นกริดถี่เกินไปในมุมมองนี้ ให้ซูมเข้าหรือเลือกระยะห่างที่กว้างขึ้น');return}
+  const dg=Math.max(1,5-Math.round(Math.log10(s)));
+  const lab=v=>s>=1e5?String(Math.floor(v/1e5)):String(Math.floor((v%1e5)/s)).padStart(dg,'0');
+  const F=[],S=30;
+  const line=(fix,isE)=>{
+    const co=[];
+    for(let i=0;i<=S;i++){
+      const a=isE?N0+(N1-N0)*i/S:E0+(E1-E0)*i/S;
+      const q=isE?fromUTM(zone,fix,a,south):fromUTM(zone,a,fix,south);
+      co.push([q.lng,q.lat]);
+    }
+    F.push({type:'Feature',properties:{m:Math.round(fix/s)%10===0},geometry:{type:'LineString',coordinates:co}});
+    let best=null,bd=1e9;
+    co.forEach(pt=>{
+      const sp=map.project(pt);
+      if(sp.x<8||sp.x>w-8||sp.y<70||sp.y>hh-8)return;
+      const d=isE?Math.abs(sp.y-hh*.86):Math.abs(sp.x-w*.05);
+      if(d<bd){bd=d;best=pt}
+    });
+    if(best){
+      const el=document.createElement('div');el.className='gl';el.textContent=lab(fix);
+      gl.push(new maplibregl.Marker({element:el}).setLngLat(best).addTo(map));
+    }
+  };
+  for(let E=Math.ceil(E0/s)*s;E<=E1;E+=s)line(E,true);
+  for(let N=Math.ceil(N0/s)*s;N<=N1;N+=s)line(N,false);
+  src.setData({type:'FeatureCollection',features:F});
+}
+// ---- /GRID ----
 const nameOf=i=>T[i.type][1]+(i.name?' '+i.name:'')+' #'+i.id;
 
 // ---------- symbols ----------
@@ -172,7 +270,7 @@ function pick(it){
 }
 function show(){
   if(!sel.length)return;
-  let t=sel.map(i=>nameOf(i)+'  '+fmt(i.m.getLngLat())+'  สูง≈'+Math.round(h(i.m.getLngLat()))+' ม.').join('\n');
+  let t=sel.map(i=>nameOf(i)+'  '+mgrs(i.m.getLngLat())+'\n   '+fmt(i.m.getLngLat())+'  สูง≈'+Math.round(h(i.m.getLngLat()))+' ม.').join('\n');
   if(sel.length===2){const a=sel[0].m.getLngLat(),b=sel[1].m.getLngLat();
     t+='\nระยะ '+dist(a,b).toFixed(2)+' กม.  ทิศ '+mils(brg(a,b))+' มิล';}
   say(t);
@@ -260,7 +358,24 @@ map.on('click',e=>{
   if(mode==='line'){cur.push(p);drawLines()}
   else if(mode==='unit')add('unit',p[0],p[1],{sidc:unitSidc(),name:$('uname').value.trim()});
   else if(mode)add(mode,p[0],p[1]);
+  else say('จุดที่แตะ  '+mgrs(e.lngLat)+'\n'+fmt(e.lngLat)+'  สูง≈'+Math.round(h(p))+' ม.');
 });
+$('grid').onclick=()=>{gridOn=!gridOn;$('grid').classList.toggle('on',gridOn);drawGrid();if(gridOn)say('เปิดเส้นกริด UTM (WGS84) ตัวเลขที่ขอบคือหลักกริด เส้นหนา = ทุก 10 ช่อง')};
+$('gsp').onchange=drawGrid;
+map.on('moveend',drawGrid);
+const ctr=()=>{$('mgc').textContent='กลางจอ '+mgrs(map.getCenter())};
+map.on('moveend',ctr);map.on('load',ctr);
+function putAt(p){
+  if(mode==='unit')add('unit',p.lng,p.lat,{sidc:unitSidc(),name:$('uname').value.trim()});
+  else add(BASIC.includes(mode)?mode:'own',p.lng,p.lat);
+}
+const readMg=()=>{
+  const p=parseCoord($('mg').value);
+  if(!p||Math.abs(p.lat)>84||Math.abs(p.lng)>180){say('พิกัดไม่ถูกต้อง ตัวอย่าง 47P PS 75818 44038 หรือ 14.44,101.37');return null}
+  return p;
+};
+$('mgp').onclick=()=>{const p=readMg();if(!p)return;putAt(p);map.flyTo({center:[p.lng,p.lat],zoom:Math.max(map.getZoom(),15)});say('วางที่ '+mgrs(p)+'\n'+fmt(p))};
+$('mgo').onclick=()=>{const p=readMg();if(!p)return;map.flyTo({center:[p.lng,p.lat],zoom:Math.max(map.getZoom(),15)});say('ไปที่ '+mgrs(p)+'\n'+fmt(p))};
 $('ren').onclick=()=>{
   if(sel.length!==1)return say('เลือกสัญลักษณ์ 1 จุดก่อน');
   const n=prompt('ชื่อ/หน่วย',sel[0].name);if(n===null)return;
@@ -306,7 +421,7 @@ $('gps').onclick=()=>{
     if(mode==='unit')add('unit',c.longitude,c.latitude,{sidc:unitSidc(),name:$('uname').value.trim()});
     else add(BASIC.includes(mode)?mode:'own',c.longitude,c.latitude);
     map.flyTo({center:[c.longitude,c.latitude],zoom:c.accuracy>100?14:16});
-    say('วางที่ตำแหน่งปัจจุบัน  '+c.latitude.toFixed(5)+', '+c.longitude.toFixed(5)+'\nคลาดเคลื่อน ±'+Math.round(c.accuracy)+' ม.'+(c.accuracy>50?'\nไม่แม่นพอ ให้ลากสัญลักษณ์ไปจุดที่ถูกต้องบนแผนที่':''));
+    say('วางที่ตำแหน่งปัจจุบัน  '+mgrs({lat:c.latitude,lng:c.longitude})+'\n'+c.latitude.toFixed(5)+', '+c.longitude.toFixed(5)+'\nคลาดเคลื่อน ±'+Math.round(c.accuracy)+' ม.'+(c.accuracy>50?'\nไม่แม่นพอ ให้ลากสัญลักษณ์ไปจุดที่ถูกต้องบนแผนที่':''));
   };
   gpsW=navigator.geolocation.watchPosition(p=>{
     if(!best||p.coords.accuracy<best.coords.accuracy)best=p;
