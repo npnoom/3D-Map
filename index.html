@@ -52,7 +52,7 @@ input[type=number]{width:64px}
 .drh{display:flex;justify-content:space-between;align-items:center;color:#fde68a;font-weight:600}
 .x{padding:2px 9px;border-radius:6px}
 .hint{color:#9ca3af;font-size:11px;line-height:1.4}
-#bot{position:absolute;left:calc(env(safe-area-inset-left,0px) + 68px);bottom:calc(env(safe-area-inset-bottom,0px) + 28px);right:80px;z-index:5;display:flex;flex-direction:column;gap:6px;align-items:flex-start;pointer-events:none}
+#bot{position:absolute;left:calc(env(safe-area-inset-left,0px) + 68px);bottom:calc(env(safe-area-inset-bottom,0px) + 28px);right:170px;z-index:5;display:flex;flex-direction:column;gap:6px;align-items:flex-start;pointer-events:none}
 #bot>*{pointer-events:auto}
 #selbar{display:flex;gap:6px;flex-wrap:wrap;background:rgba(20,33,26,.92);border:1px solid #3d5c48;border-radius:10px;padding:5px}
 #card{display:flex;gap:8px;align-items:flex-start;max-width:440px;background:rgba(20,33,26,.92);border:1px solid #3d5c48;border-radius:10px;padding:6px 8px;color:#d1fae5;font-size:12px}
@@ -61,6 +61,11 @@ input[type=number]{width:64px}
 .me{width:16px;height:16px;border-radius:50%;background:#2563eb;border:3px solid #fff;box-shadow:0 0 0 2px rgba(37,99,235,.35),0 1px 4px #000a;pointer-events:none}
 .mk{transform:scale(var(--k,1))}
 .mk.enemy{transform:rotate(45deg) scale(var(--k,1))}
+#ur{position:absolute;right:calc(env(safe-area-inset-right,0px) + 10px);bottom:calc(env(safe-area-inset-bottom,0px) + 36px);z-index:6;display:flex;gap:6px}
+#ur button{min-width:68px;min-height:48px;font-size:20px;line-height:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:rgba(20,33,26,.92)}
+#ur small{font-size:10px}
+button:disabled{opacity:.35}
+input[type=checkbox]{width:22px;height:22px}
 input[type=color]{width:46px;height:30px;padding:0;border:1px solid #3d5c48;border-radius:6px;background:none}
 input[type=range]{width:140px}
 output{min-width:34px;font-size:12px;color:#d1fae5}
@@ -103,6 +108,7 @@ output{min-width:34px;font-size:12px;color:#d1fae5}
   <div class="drh"><span>จุดปฏิบัติการ / กรวยยิง</span><button class="x" data-close>✕</button></div>
   <div class="row" id="types"></div>
   <div class="hint" id="fanwho"></div>
+  <div class="row"><label style="display:inline-flex;align-items:center;gap:6px"><input id="fshow" type="checkbox" checked> แสดงกรวยยิง</label><button id="fall">แสดงทุกกรวย</button><button id="fnone">ซ่อนทุกกรวย</button></div>
   <div class="row"><span>ทิศยิง</span><input id="faz" type="number" step="1" value="0"><span>กว้าง</span><input id="fw" type="number" min="0" step="1" value="1600"><select id="fu"><option value="mil">มิล</option><option value="deg">องศา</option></select></div>
   <div class="row"><span>ระยะ ต่ำสุด</span><input id="rmin" type="number" min="0" step="0.5" value="1"><span>สูงสุด</span><input id="rmax" type="number" min="0" step="0.5" value="10"><span>กม.</span></div>
   <div class="row"><button id="faim">หันไปที่หมุด / จุดที่สอง</button></div>
@@ -151,8 +157,10 @@ output{min-width:34px;font-size:12px;color:#d1fae5}
   <div class="row"><button id="clr" class="warn">ล้างทั้งหมด</button></div>
 </div>
 
+<div id="ur"><button id="undo" title="ย้อนกลับ (Ctrl+Z)">↶<small>ย้อนกลับ</small></button><button id="redo" title="ทำซ้ำ (Ctrl+Y)">↷<small>ทำซ้ำ</small></button></div>
+
 <div id="bot">
-  <div id="selbar" hidden><button id="ren">ตั้งชื่อ</button><button id="los" hidden>ตรวจแนวสายตา</button><button id="del" class="warn">ลบ</button><button id="desel">เลิกเลือก</button></div>
+  <div id="selbar" hidden><button id="fcone" hidden>กรวยยิง</button><button id="ren">ตั้งชื่อ</button><button id="los" hidden>ตรวจแนวสายตา</button><button id="del" class="warn">ลบ</button><button id="desel">เลิกเลือก</button></div>
   <div id="card" hidden><span id="info"></span><button class="x" id="cardx">✕</button></div>
 </div>
 <div id="pk" hidden>
@@ -216,6 +224,7 @@ map.on('load',()=>{
   map.addLayer({id:'los',type:'line',source:'los',paint:{'line-color':['case',['get','ok'],'#22c55e','#ef4444'],'line-width':4}});
   if(gridOn)drawGrid();
   try{load(JSON.parse(localStorage.getItem('sit')||'null')||{items:JSON.parse(localStorage.getItem('items')||'[]')})}catch(e){}
+  histInit();
 });
 
 // ---------- helpers ----------
@@ -396,12 +405,14 @@ function render(it){
 }
 function add(type,lng,lat,o){
   o=o||{};
-  const it={id:++seq,type,sidc:o.sidc,name:o.name||'',fan:o.fan||null,sz:o.sz,op:o.op,el:document.createElement('div')};
+  act('วาง'+T[type][1]);
+  if(o.id&&o.id>seq)seq=o.id;
+  const it={id:o.id||++seq,type,sidc:o.sidc,name:o.name||'',fan:o.fan||null,cone:o.cone,sz:o.sz,op:o.op,el:document.createElement('div')};
   render(it);
   it.m=new maplibregl.Marker({element:it.el,draggable:true}).setLngLat([lng,lat]).addTo(map);
   it.el.addEventListener('click',ev=>{ev.stopPropagation();pick(it)});
   it.m.on('drag',rings);
-  it.m.on('dragend',()=>{save();show()});
+  it.m.on('dragend',()=>{act('ย้ายสัญลักษณ์');save();show()});
   items.push(it);rings();save();return it;
 }
 function pick(it){
@@ -453,7 +464,7 @@ function pkRender(){
     BRALL.forEach((b,idx)=>{
       const bt=document.createElement('button'),code=brCode(b);
       bt.className='tile'+(!symPick&&$('utype').selectedIndex===idx?' on':'');
-      bt.innerHTML='<div class="sym">'+symSvg('S'+$('aff').value+'GP'+code+'--'+'---',34)+'</div>'+esc((b[1]?b[1]+' ':'')+b[0]+(brOk(b)?'':' *'));
+      bt.innerHTML='<div class="sym">'+symSvg('S'+$('aff').value+'GP'+code+'--'+'---',34)+'</div>'+esc((b[1]&&!b[0].includes(b[1])?b[1]+' ':'')+b[0]+(brOk(b)?'':' *'));
       bt.onclick=()=>{$('utype').selectedIndex=idx;symPick=null;brChanged();updatePrev();pkRender()};
       g.appendChild(bt);
     });
@@ -475,21 +486,21 @@ function pkRender(){
   },20);
 }
 // ---------- save / load ----------
-const dump=()=>({items:items.map(i=>({t:i.type,s:i.sidc,n:i.name,f:i.fan||undefined,z:i.sz,q:i.op,p:i.m.getLngLat().toArray()})),lines,fd:DEF,sd:SYM,ld:DEFL});
-function save(){try{localStorage.setItem('sit',JSON.stringify(dump()))}catch(e){}}
+const dump=()=>({items:items.map(i=>({t:i.type,s:i.sidc,n:i.name,i:i.id,f:i.fan||undefined,k:i.cone,z:i.sz,q:i.op,p:i.m.getLngLat().toArray()})),lines,fd:DEF,sd:SYM,ld:DEFL});
+function save(){try{localStorage.setItem('sit',JSON.stringify(dump()))}catch(e){}sched()}
 function load(d){
   items.forEach(i=>i.m.remove());items=[];sel=[];selUi();lines=d.lines||[];selLine=null;
   if(d.fd)Object.assign(DEF,d.fd);
   if(d.sd)Object.assign(SYM,d.sd);
   if(d.ld)Object.assign(DEFL,d.ld);
-  (d.items||[]).forEach(o=>{if(T[o.t])add(o.t,o.p[0],o.p[1],{sidc:o.s,name:o.n,fan:o.f,sz:o.z,op:o.q})});
+  (d.items||[]).forEach(o=>{if(T[o.t])add(o.t,o.p[0],o.p[1],{sidc:o.s,name:o.n,fan:o.f,cone:o.k,sz:o.z,op:o.q,id:o.i})});
   drawLines();rings();styleUI();fanUI();save();
 }
 
 // ---------- range rings ----------
-const isGun=i=>i.type==='gun'||(i.sidc&&i.sidc.slice(4,8)==='UCFH');
+const isGun=i=>i.type==='gun'||(i.sidc&&i.sidc.slice(4,7)==='UCF');
 // ---- FAN ----
-const DEF={az:0,w:1600,min:1,max:10,col:'#f59e0b',fo:0.2,lo:0.9};
+const DEF={az:0,w:1600,min:1,max:10,col:'#f59e0b',fo:0.2,lo:0.9,on:true};
 const fanOf=i=>i.fan||DEF;
 const m2d=m=>m*360/6400;
 function dest(c,brgDeg,km){
@@ -514,6 +525,7 @@ function rings(){
   const src=map.getSource('rings');if(!src)return;
   const F=[];
   items.filter(isGun).forEach(i=>{
+    if(!(i.cone??DEF.on))return;
     const c=i.m.getLngLat().toArray(),f=fanOf(i);
     if(!(f.max>0))return;
     F.push({type:'Feature',properties:{k:'fan',c:f.col||DEF.col,fo:f.fo??DEF.fo,lo:f.lo??DEF.lo},geometry:{type:'Polygon',coordinates:fanPoly(c,{az:f.az,w:f.w,max:f.max,min:Math.min(f.min,f.max)})}});
@@ -528,12 +540,25 @@ function fanUI(){
   const gs=selGuns(),f=gs.length?fanOf(gs[0]):DEF;
   $('faz').value=toU(f.az);$('fw').value=toU(f.w);$('rmin').value=f.min;$('rmax').value=f.max;
   $('fanwho').textContent=gs.length?'กรวยยิงของ: '+nameOf(gs[0])+(gs.length>1?' (และอีก '+(gs.length-1)+' กระบอก ใช้ค่าชุดเดียวกัน)':''):'ค่าเริ่มต้นของทุกกระบอก (เลือกอาวุธเพื่อตั้งค่าเฉพาะกระบอก)';
+  const on=gs.length?(gs[0].cone??DEF.on):DEF.on;
+  $('fshow').checked=on;
+  const fc=$('fcone');fc.hidden=!gs.length;fc.textContent='กรวยยิง: '+(on?'แสดง':'ซ่อน');
 }
+// เปิด/ปิดการแสดงกรวยยิง: ถ้าเลือกอาวุธอยู่ใช้กับที่เลือก ถ้าไม่ได้เลือกคือค่าเริ่มต้นของทุกกระบอก
+function setCone(v){
+  const gs=selGuns();
+  if(gs.length)gs.forEach(i=>{i.cone=v});else DEF.on=v;
+  act(v?'แสดงกรวยยิง':'ซ่อนกรวยยิง');rings();fanUI();save();
+}
+$('fshow').onchange=()=>setCone($('fshow').checked);
+$('fcone').onclick=()=>{const gs=selGuns();if(gs.length)setCone(!(gs[0].cone??DEF.on))};
+$('fall').onclick=()=>{DEF.on=true;items.forEach(i=>{i.cone=undefined});act('แสดงทุกกรวยยิง');rings();fanUI();save();say('แสดงกรวยยิงทุกกระบอก')};
+$('fnone').onclick=()=>{DEF.on=false;items.forEach(i=>{i.cone=undefined});act('ซ่อนทุกกรวยยิง');rings();fanUI();save();say('ซ่อนกรวยยิงทุกกระบอก')};
 function fanEdit(){
   const v={az:((fromU(+$('faz').value||0)%6400)+6400)%6400,w:Math.max(0,Math.min(6400,fromU(+$('fw').value||0))),min:Math.max(0,+$('rmin').value||0),max:Math.max(0,+$('rmax').value||0)};
   const gs=selGuns();
   if(gs.length)gs.forEach(i=>{i.fan={...fanOf(i),...v}});else Object.assign(DEF,v);
-  rings();save();
+  act('ปรับกรวยยิง');rings();save();
 }
 ['faz','fw','rmin','rmax'].forEach(id=>{$(id).oninput=fanEdit});
 $('fu').onchange=fanUI;
@@ -546,7 +571,7 @@ $('faim').onclick=()=>{
   if(!t)return say('ปักหมุดเป้าหมายก่อน (แตะแผนที่ในโหมดเลื่อนดู) หรือเลือกจุดที่สอง');
   const a=g.m.getLngLat(),az=mils(brg(a,t));
   selGuns().forEach(i=>{i.fan={...fanOf(i),az}});
-  fanUI();rings();save();
+  fanUI();act('หันกรวยยิง');rings();save();
   say('หันกรวยไปที่ทิศ '+az+' มิล  ระยะถึงหมุด '+dist(a,t).toFixed(2)+' กม.');
 };
 
@@ -557,12 +582,13 @@ function drawLines(){
   if(cur.length>1)F.push({type:'Feature',properties:{c:DEFL.c,d:DEFL.d,o:DEFL.o,w:DEFL.w,i:-1},geometry:{type:'LineString',coordinates:cur}});
   src.setData({type:'FeatureCollection',features:F});
   if(map.getLayer('lines-sel'))map.setFilter('lines-sel',['==',['get','i'],selLine===null?-2:selLine]);
+  urUI();
 }
 $('lend').onclick=()=>{
-  if(cur.length>1){lines.push({p:cur,c:DEFL.c,o:DEFL.o,w:DEFL.w,d:DEFL.d});save()}
+  if(cur.length>1){lines.push({p:cur,c:DEFL.c,o:DEFL.o,w:DEFL.w,d:DEFL.d});act('วาดเส้น');save()}
   cur=[];drawLines();say('จบเส้นแล้ว');
 };
-$('lundo').onclick=()=>{cur.length?cur.pop():lines.pop();selLine=null;save();drawLines();styleUI()};
+$('lundo').onclick=()=>{cur.length?cur.pop():lines.pop();selLine=null;act('ลบเส้นล่าสุด');save();drawLines();styleUI()};
 
 // ---------- line of sight ----------
 function clearLos(){map.getSource('los')?.setData(empty)}
@@ -658,16 +684,16 @@ $('mgo').onclick=()=>{const p=readMg();if(!p)return;centerOn([p.lng,p.lat],Math.
 $('ren').onclick=()=>{
   if(sel.length!==1)return say('เลือกสัญลักษณ์ 1 จุดก่อน');
   const n=prompt('ชื่อ/หน่วย',sel[0].name);if(n===null)return;
-  sel[0].name=n;render(sel[0]);save();show();
+  sel[0].name=n;render(sel[0]);act('ตั้งชื่อ');save();show();
 };
 $('del').onclick=()=>{
   sel.forEach(i=>i.m.remove());items=items.filter(i=>!sel.includes(i));sel=[];selUi();
-  rings();save();clearLos();say('ลบแล้ว');
+  act('ลบสัญลักษณ์');rings();save();clearLos();say('ลบแล้ว');
 };
 $('clr').onclick=()=>{
   if(!confirm('ล้างสัญลักษณ์และเส้นทั้งหมด?'))return;
   items.forEach(i=>i.m.remove());items=[];sel=[];selUi();lines=[];cur=[];
-  rings();drawLines();save();clearLos();say('ล้างแล้ว');
+  act('ล้างทั้งหมด');rings();drawLines();save();clearLos();say('ล้างแล้ว');
 };
 $('ex').oninput=e=>{ex=+e.target.value;map.setTerrain({source:'dem',exaggeration:ex});saveView()};
 function applyBm(v){
@@ -687,7 +713,7 @@ $('exp').onclick=()=>{
 $('imp').onchange=e=>{
   const f=e.target.files[0];if(!f)return;
   const r=new FileReader();
-  r.onload=()=>{try{load(JSON.parse(r.result));say('นำเข้าแล้ว')}catch(x){say('ไฟล์ไม่ถูกต้อง')}};
+  r.onload=()=>{try{load(JSON.parse(r.result));act('นำเข้าไฟล์');say('นำเข้าแล้ว')}catch(x){say('ไฟล์ไม่ถูกต้อง')}};
   r.readAsText(f);e.target.value='';
 };
 
@@ -712,6 +738,7 @@ const BRALL=[
   ['ทหารการสัตว์','กส.','Veterinary',['USMV']],
   ['ทหารดุริยางค์','ดย.','Band',[]],
   ['ทหารการข่าว','ขว.','Intelligence',['UUM']],
+  ['กองพันจรวด','จรวด','Rocket Battalion',['UCFRM','UCFR'],'F'],
   ['ต่อสู้อากาศยาน','ปตอ.','Air Defense',['UCD']],
   ['การบินทหารบก','','Army Aviation',['UCV']],
   ['ลาดตระเวน','','Reconnaissance',['UCR']]
@@ -731,15 +758,19 @@ function buildBr(){
   g1.label='17 เหล่า กองทัพบก';g2.label='อื่นๆ';
   BRALL.forEach((b,i)=>{
     const o=document.createElement('option');o.value=brCode(b);
-    o.textContent=(b[1]?b[1]+' ':'')+b[0]+(brOk(b)?'':' *');
+    o.textContent=(b[1]&&!b[0].includes(b[1])?b[1]+' ':'')+b[0]+(brOk(b)?'':' *');
     (i<17?g1:g2).appendChild(o);
   });
   s.appendChild(g1);s.appendChild(g2);
 }
+let autoEch=false;
 function brChanged(){
   const b=BRALL[$('utype').selectedIndex],u=$('uname');
   if(b&&b[1]&&(!u.value||ABS.includes(u.value)))u.value=b[1];
+  if(b&&b[4]){$('ech').value=b[4];autoEch=true}
+  else if(autoEch){$('ech').value='-';autoEch=false}
 }
+$('ech').addEventListener('change',()=>{autoEch=false});
 buildBr();
 
 // ---------- ตัวเลือกสัญลักษณ์ทั้งหมด ----------
@@ -785,16 +816,19 @@ function styleUI(){
   $('ldel').hidden=!has;$('lsel').hidden=!has;
 }
 $('ssz').oninput=()=>{
+  act('ปรับขนาดสัญลักษณ์');
   const v=+$('ssz').value;
   if(sel.length)sel.forEach(i=>{i.sz=v;render(i)});else{SYM.size=v;items.forEach(render)}
   $('sszv').textContent=v;save();
 };
 $('sop').oninput=()=>{
+  act('ปรับความโปร่งแสง');
   const v=+$('sop').value/100;
   if(sel.length)sel.forEach(i=>{i.op=v;render(i)});else{SYM.op=v;items.forEach(render)}
   $('sopv').textContent=$('sop').value+'%';save();
 };
 function fanStyle(){
+  act('ปรับสีกรวยยิง');
   const st={col:$('fcol').value,fo:+$('ffo').value/100,lo:+$('flo').value/100},gs=selGuns();
   if(gs.length)gs.forEach(i=>{i.fan={...fanOf(i),...st}});else Object.assign(DEF,st);
   $('ffov').textContent=$('ffo').value+'%';$('flov').textContent=$('flo').value+'%';
@@ -802,6 +836,7 @@ function fanStyle(){
 }
 ['fcol','ffo','flo'].forEach(id=>{$(id).oninput=fanStyle});
 function lineStyle(){
+  act('ปรับสไตล์เส้น');
   const st={c:$('lcol').value,o:+$('lop').value/100,w:+$('lw').value,d:$('ldash').value};
   if(selLine!==null&&lines[selLine])Object.assign(lines[selLine],st);else Object.assign(DEFL,st);
   $('lopv').textContent=$('lop').value+'%';$('lwv').textContent=$('lw').value;
@@ -813,9 +848,68 @@ function mkSw(rowId,inputId,fire){
   SW.forEach(c=>{const b=document.createElement('button');b.className='sw';b.style.background=c;b.onclick=()=>{$(inputId).value=c;fire()};$(rowId).appendChild(b)});
 }
 mkSw('fsw','fcol',fanStyle);mkSw('lsw','lcol',lineStyle);
-$('ldel').onclick=()=>{if(selLine!==null&&lines[selLine]){lines.splice(selLine,1);selLine=null;save();drawLines();styleUI();say('ลบเส้นแล้ว')}};
+$('ldel').onclick=()=>{if(selLine!==null&&lines[selLine]){act('ลบเส้น');lines.splice(selLine,1);selLine=null;save();drawLines();styleUI();say('ลบเส้นแล้ว')}};
 $('lsel').onclick=()=>{selLine=null;drawLines();styleUI()};
 $('tostyle').onclick=()=>{$('rb-style').click()};
+
+// ---------- ประวัติการแก้ไข (ย้อนกลับ / ทำซ้ำ) ----------
+let H=[],hi=-1,restoring=false,pend=null,lastAct='แก้ไข';
+const HMAX=60;
+const act=l=>{lastAct=l};
+function histSave(){
+  try{localStorage.setItem('hist',JSON.stringify({H,hi}))}
+  catch(e){try{H=H.slice(-15);hi=Math.min(hi,H.length-1);localStorage.setItem('hist',JSON.stringify({H,hi}))}catch(x){}}
+}
+function urUI(){
+  const u=$('undo'),r=$('redo');if(!u||!r)return;
+  u.disabled=!(cur.length>0||pend!==null||hi>0);
+  r.disabled=!(hi<H.length-1);
+}
+function commit(){
+  clearTimeout(pend);pend=null;
+  const s=JSON.stringify(dump());
+  if(hi>=0&&H[hi].s===s){urUI();return}
+  H=H.slice(0,hi+1);H.push({s,l:lastAct});hi=H.length-1;
+  if(H.length>HMAX){H.shift();hi--}
+  lastAct='แก้ไข';histSave();urUI();
+}
+function sched(){if(restoring)return;clearTimeout(pend);pend=setTimeout(commit,350);urUI()}
+function histInit(){
+  const s=JSON.stringify(dump());
+  try{
+    const o=JSON.parse(localStorage.getItem('hist')||'null');
+    if(o&&o.H&&o.H[o.hi]&&o.H[o.hi].s===s){H=o.H;hi=o.hi;clearTimeout(pend);pend=null;urUI();return}
+  }catch(e){}
+  clearTimeout(pend);pend=null;
+  H=[{s,l:'เริ่มต้น'}];hi=0;histSave();urUI();
+}
+function restoreTo(i){
+  const ids=sel.map(x=>x.id);
+  restoring=true;
+  try{load(JSON.parse(H[i].s))}finally{restoring=false}
+  sel=items.filter(x=>ids.includes(x.id));
+  items.forEach(x=>x.el.firstChild.classList.toggle('sel',sel.includes(x)));
+  selUi();hi=i;histSave();urUI();
+}
+function undo(){
+  if(cur.length){cur.pop();drawLines();return}
+  if(pend)commit();
+  if(hi<=0)return say('ไม่มีขั้นตอนให้ย้อนกลับ');
+  const l=H[hi].l;restoreTo(hi-1);say('ย้อนกลับ: '+l+'  (ขั้นที่ '+hi+'/'+(H.length-1)+')');
+}
+function redo(){
+  if(pend)commit();
+  if(hi>=H.length-1)return say('ไม่มีขั้นตอนให้ทำซ้ำ');
+  restoreTo(hi+1);say('ทำซ้ำ: '+H[hi].l+'  (ขั้นที่ '+hi+'/'+(H.length-1)+')');
+}
+$('undo').onclick=undo;$('redo').onclick=redo;
+document.addEventListener('keydown',e=>{
+  if(['INPUT','TEXTAREA','SELECT'].includes((e.target||{}).tagName))return;
+  const k=(e.key||'').toLowerCase();
+  if((e.ctrlKey||e.metaKey)&&k==='z'){e.preventDefault();e.shiftKey?redo():undo()}
+  else if((e.ctrlKey||e.metaKey)&&k==='y'){e.preventDefault();redo()}
+});
+window.addEventListener('pagehide',()=>{if(pend)commit()});
 
 // ---------- GPS ----------
 let meM=null;
