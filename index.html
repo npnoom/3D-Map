@@ -59,7 +59,14 @@ input[type=number]{width:64px}
 #info{white-space:pre-line;line-height:1.5}
 @media(max-width:600px){.dr{width:calc(100% - 76px)}}
 .me{width:16px;height:16px;border-radius:50%;background:#2563eb;border:3px solid #fff;box-shadow:0 0 0 2px rgba(37,99,235,.35),0 1px 4px #000a;pointer-events:none}
-.cap{position:absolute;left:50%;top:100%;transform:translateX(-50%);white-space:nowrap;color:#fff;font:600 11px system-ui,sans-serif;text-shadow:0 0 3px #000,0 0 3px #000,0 0 3px #000;pointer-events:none}
+.mk{transform:scale(var(--k,1))}
+.mk.enemy{transform:rotate(45deg) scale(var(--k,1))}
+input[type=color]{width:46px;height:30px;padding:0;border:1px solid #3d5c48;border-radius:6px;background:none}
+input[type=range]{width:140px}
+output{min-width:34px;font-size:12px;color:#d1fae5}
+.sw{width:26px;height:26px;padding:0;border-radius:50%;border:2px solid #fff}
+.sec{margin:8px 0 2px;color:#fde68a;font-weight:600;border-top:1px solid #2f4a39;padding-top:6px}
+.cap{position:absolute;left:50%;top:100%;transform:translateX(-50%);white-space:nowrap;color:#fff;font:600 max(9px,calc(11px*var(--k,1))) system-ui,sans-serif;text-shadow:0 0 3px #000,0 0 3px #000,0 0 3px #000;pointer-events:none}
 </style>
 </head>
 <body>
@@ -71,6 +78,7 @@ input[type=number]{width:64px}
   <button class="rb" id="rb-units"><i>▣</i>หน่วย</button>
   <button class="rb" id="rb-points"><i>◉</i>จุด/กรวยยิง</button>
   <button class="rb" id="rb-lines"><i>〰</i>เส้น</button>
+  <button class="rb" id="rb-style"><i>◐</i>สี/ขนาด</button>
   <button class="rb" id="grid"><i>▦</i>กริด</button>
   <button class="rb" id="rb-coord"><i>⊕</i>พิกัด</button>
   <button class="rb" id="gps"><i>⌖</i>ตำแหน่งฉัน</button>
@@ -83,15 +91,10 @@ input[type=number]{width:64px}
     <select id="aff"><option value="F">ฝ่ายเรา</option><option value="H">ข้าศึก</option><option value="N">เป็นกลาง</option><option value="U">ไม่ทราบ</option></select>
     <select id="ech"><option value="-">ไม่ระบุขนาด</option><option value="B">หมู่</option><option value="D">หมวด</option><option value="E">กองร้อย</option><option value="F">กองพัน</option><option value="G">กรม</option><option value="H">กองพลน้อย</option><option value="I">กองพล</option></select>
   </div>
-  <div class="row"><select id="utype">
-    <option value="UCI---">ทหารราบ</option><option value="UCA---">ยานเกราะ</option>
-    <option value="UCFH--">ปืนใหญ่</option><option value="UCFM--">ค./ปืนเล็กใหญ่</option>
-    <option value="UCR---">ลาดตระเวน</option><option value="UCE---">ช่าง</option>
-    <option value="UCD---">ต่อสู้อากาศยาน</option><option value="UCV---">การบินทหารบก</option>
-    <option value="USS---">ส่งกำลังบำรุง</option><option value="USM---">แพทย์</option>
-  </select></div>
+  <div class="row"><select id="utype"></select></div>
+  <div class="hint">เหล่า ทบ. 17 เหล่า (* = ไม่มีไอคอนมาตรฐานที่ตรงกัน ใช้กรอบทั่วไป + อักษรย่อเหล่าเป็นชื่อ) ปรับชื่อและขนาดได้ภายหลัง</div>
   <div class="row"><input id="uname" type="text" placeholder="ชื่อหน่วย เช่น ร.1" size="12"><button id="bunit" data-t="unit">วางหน่วย</button></div>
-  <div class="row"><button id="bpk">สัญลักษณ์ทั้งหมด…</button><button id="bpkx">รายการสั้น</button></div>
+  <div class="row"><button id="bbr">เหล่า ทบ. ด้วยภาพ</button><button id="bpk">สัญลักษณ์ทั้งหมด…</button><button id="bpkx">รายการสั้น</button></div>
   <div class="row"><span id="prev" style="display:inline-flex;align-items:center;gap:6px"></span></div>
   <details><summary>ขั้นสูง: ใส่รหัส SIDC เอง</summary><div class="row"><input id="sidc" type="text" placeholder="SFGPUCI----D---" size="18"></div></details>
 </div>
@@ -108,12 +111,28 @@ input[type=number]{width:64px}
 
 <div class="dr" id="dr-lines" hidden>
   <div class="drh"><span>เส้น / แนว</span><button class="x" data-close>✕</button></div>
-  <div class="row">
-    <select id="lcol"><option value="#3b82f6">น้ำเงิน (ฝ่ายเรา)</option><option value="#ef4444">แดง (ข้าศึก)</option><option value="#facc15">เหลือง (แนวประสาน)</option><option value="#f8fafc">ขาว</option></select>
-    <select id="ldash"><option value="">เส้นทึบ</option><option value="1">เส้นประ</option></select>
-  </div>
+  <div class="row"><button id="tostyle">สี / ความโปร่งแสง / ความหนาเส้น…</button></div>
   <div class="row"><button id="bline" data-t="line">วาดเส้น</button><button id="lend">จบเส้น</button><button id="lundo">ย้อน/ลบล่าสุด</button></div>
-  <div class="hint">แตะแผนที่ทีละจุด แล้วกด "จบเส้น"</div>
+  <div class="hint">แตะแผนที่ทีละจุด แล้วกด "จบเส้น" ถ้าต้องการแก้เส้นที่วาดแล้ว ให้เลือกโหมดเลื่อนดูแล้วแตะที่เส้น</div>
+</div>
+
+<div class="dr" id="dr-style" hidden>
+  <div class="drh"><span>สี / ความโปร่งแสง / ขนาด</span><button class="x" data-close>✕</button></div>
+  <div class="sec">สัญลักษณ์หน่วย/จุด</div>
+  <div class="hint" id="swho"></div>
+  <div class="row"><span>ขนาด</span><input id="ssz" type="range" min="16" max="96" step="2" value="34"><output id="sszv">34</output></div>
+  <div class="row"><span>โปร่งแสง</span><input id="sop" type="range" min="20" max="100" step="5" value="100"><output id="sopv">100%</output></div>
+  <div class="sec">กรวยยิง</div>
+  <div class="hint" id="fwho"></div>
+  <div class="row"><span>สี</span><input id="fcol" type="color" value="#f59e0b"><span id="fsw" style="display:inline-flex;gap:4px;flex-wrap:wrap"></span></div>
+  <div class="row"><span>พื้นที่</span><input id="ffo" type="range" min="0" max="100" step="5" value="20"><output id="ffov">20%</output></div>
+  <div class="row"><span>เส้นขอบ</span><input id="flo" type="range" min="0" max="100" step="5" value="90"><output id="flov">90%</output></div>
+  <div class="sec">เส้น / แนว</div>
+  <div class="hint" id="lwho"></div>
+  <div class="row"><span>สี</span><input id="lcol" type="color" value="#3b82f6"><span id="lsw" style="display:inline-flex;gap:4px;flex-wrap:wrap"></span></div>
+  <div class="row"><span>โปร่งแสง</span><input id="lop" type="range" min="10" max="100" step="5" value="100"><output id="lopv">100%</output></div>
+  <div class="row"><span>หนา</span><input id="lw" type="range" min="1" max="12" step="0.5" value="3.5"><output id="lwv">3.5</output><select id="ldash"><option value="">เส้นทึบ</option><option value="1">เส้นประ</option></select></div>
+  <div class="row"><button id="ldel" class="warn" hidden>ลบเส้นที่เลือก</button><button id="lsel" hidden>เลิกเลือกเส้น</button></div>
 </div>
 
 <div class="dr" id="dr-coord" hidden>
@@ -151,6 +170,8 @@ const BASIC=['own','gun','op','enemy','tgt'];
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let items=[],sel=[],mode=null,seq=0,ex=1.3,gpsW=null,lines=[],cur=[];
+const SYM={size:34,op:1},DEFL={c:'#3b82f6',o:1,w:3.5,d:''};
+let selLine=null;
 
 const V=(()=>{try{return JSON.parse(localStorage.getItem('view')||'null')}catch(e){return null}})();
 const map=new maplibregl.Map({
@@ -186,11 +207,12 @@ map.on('load',()=>{
   map.addLayer({id:'me-acc',type:'fill',source:'me',paint:{'fill-color':'#3b82f6','fill-opacity':0.15}});
   map.addLayer({id:'me-acc-l',type:'line',source:'me',paint:{'line-color':'#60a5fa','line-width':1.5}});
   map.addLayer({id:'grid-a',type:'line',source:'grid',paint:{'line-color':'#fde047','line-opacity':0.6,'line-width':['case',['get','m'],2.2,1]}});
-  map.addLayer({id:'fan-fill',type:'fill',source:'rings',filter:['==',['get','k'],'fan'],paint:{'fill-color':'#f59e0b','fill-opacity':0.2}});
-  map.addLayer({id:'fan-line',type:'line',source:'rings',filter:['==',['get','k'],'fan'],paint:{'line-color':'#f59e0b','line-width':2.5}});
-  map.addLayer({id:'fan-axis',type:'line',source:'rings',filter:['==',['get','k'],'axis'],paint:{'line-color':'#fde68a','line-width':2,'line-dasharray':[3,2]}});
-  map.addLayer({id:'lines-s',type:'line',source:'lines',filter:['!',['to-boolean',['get','d']]],paint:{'line-color':['get','c'],'line-width':3.5}});
-  map.addLayer({id:'lines-d',type:'line',source:'lines',filter:['to-boolean',['get','d']],paint:{'line-color':['get','c'],'line-width':3.5,'line-dasharray':[3,2]}});
+  map.addLayer({id:'fan-fill',type:'fill',source:'rings',filter:['==',['get','k'],'fan'],paint:{'fill-color':['get','c'],'fill-opacity':['get','fo']}});
+  map.addLayer({id:'fan-line',type:'line',source:'rings',filter:['==',['get','k'],'fan'],paint:{'line-color':['get','c'],'line-opacity':['get','lo'],'line-width':2.5}});
+  map.addLayer({id:'fan-axis',type:'line',source:'rings',filter:['==',['get','k'],'axis'],paint:{'line-color':['get','c'],'line-opacity':['get','lo'],'line-width':2,'line-dasharray':[3,2]}});
+  map.addLayer({id:'lines-sel',type:'line',source:'lines',filter:['==',['get','i'],-2],paint:{'line-color':'#fbbf24','line-width':['+',['coalesce',['get','w'],3.5],7],'line-opacity':0.55}});
+  map.addLayer({id:'lines-s',type:'line',source:'lines',filter:['!',['to-boolean',['get','d']]],paint:{'line-color':['get','c'],'line-opacity':['get','o'],'line-width':['get','w']}});
+  map.addLayer({id:'lines-d',type:'line',source:'lines',filter:['to-boolean',['get','d']],paint:{'line-color':['get','c'],'line-opacity':['get','o'],'line-width':['get','w'],'line-dasharray':[3,2]}});
   map.addLayer({id:'los',type:'line',source:'los',paint:{'line-color':['case',['get','ok'],'#22c55e','#ef4444'],'line-width':4}});
   if(gridOn)drawGrid();
   try{load(JSON.parse(localStorage.getItem('sit')||'null')||{items:JSON.parse(localStorage.getItem('items')||'[]')})}catch(e){}
@@ -229,7 +251,7 @@ async function elevAt(p){
 const fmt=p=>p.lat.toFixed(5)+', '+p.lng.toFixed(5);
 let cardT;
 const say=t=>{$('info').textContent=t;$('card').hidden=false;clearTimeout(cardT);cardT=setTimeout(()=>{$('card').hidden=true},30000)};
-function selUi(){$('selbar').hidden=!sel.length;$('los').hidden=sel.length<2;$('ren').hidden=sel.length!==1;fanUI()}
+function selUi(){$('selbar').hidden=!sel.length;$('los').hidden=sel.length<2;$('ren').hidden=sel.length!==1;fanUI();styleUI()}
 
 // ---- MGRS ----
 const WA=6378137,WF=1/298.257223563,K0=0.9996,E2=WF*(2-WF),EP2=E2/(1-E2);
@@ -362,18 +384,19 @@ const nameOf=i=>T[i.type][1]+(i.name?' '+i.name:'')+' #'+i.id;
 function render(it){
   let inner='';
   if(it.type==='unit'&&typeof ms!=='undefined'){
-    try{inner='<div class="sym">'+new ms.Symbol(it.sidc,{size:34}).asSVG()+'</div>'}catch(e){}
+    try{inner='<div class="sym">'+new ms.Symbol(it.sidc,{size:it.sz||SYM.size}).asSVG()+'</div>'}catch(e){}
   }
   if(!inner){
     const cls=it.type==='unit'?({F:'own',H:'enemy'}[(it.sidc||'')[1]]||'tgt'):it.type;
     inner='<div class="mk '+cls+'"><span>'+T[it.type][0]+'</span></div>';
   }
+  it.el.style.setProperty('--k',(it.sz||SYM.size)/34);it.el.style.opacity=it.op??SYM.op;
   it.el.innerHTML=inner+'<div class="cap">'+esc(it.name||'')+'</div>';
   it.el.firstChild.classList.toggle('sel',sel.includes(it));
 }
 function add(type,lng,lat,o){
   o=o||{};
-  const it={id:++seq,type,sidc:o.sidc,name:o.name||'',fan:o.fan||null,el:document.createElement('div')};
+  const it={id:++seq,type,sidc:o.sidc,name:o.name||'',fan:o.fan||null,sz:o.sz,op:o.op,el:document.createElement('div')};
   render(it);
   it.m=new maplibregl.Marker({element:it.el,draggable:true}).setLngLat([lng,lat]).addTo(map);
   it.el.addEventListener('click',ev=>{ev.stopPropagation();pick(it)});
@@ -399,7 +422,7 @@ async function show(){
     t+='\nระยะ '+dist(a,b).toFixed(2)+' กม.  ทิศ '+mils(brg(a,b))+' มิล';}
   say(t);
 }
-let symPick=null,pkDim='G',pkPath='',pkTok=0;
+let symPick=null,pkDim='G',pkPath='',pkTok=0,pkBr=false;
 function unitSidc(){
   const c=$('sidc').value.trim().toUpperCase();
   if(c)return c;
@@ -415,15 +438,27 @@ function updatePrev(){
 const mkBtn=(t,f,on)=>{const b=document.createElement('button');b.textContent=t;if(on)b.className='on';b.onclick=f;return b};
 function pkRender(){
   const tok=++pkTok,d=$('pkd'),c=$('pkc'),g=$('pkg');
-  d.innerHTML='';Object.keys(DIMS).forEach(k=>d.appendChild(mkBtn(DIMS[k][0],()=>{pkDim=k;pkPath='';pkRender()},k===pkDim)));
-  c.innerHTML='';c.appendChild(mkBtn('ทั้งหมด',()=>{pkPath='';pkRender()}));
-  for(let i=1;i<=pkPath.length;i++){const q=pkPath.slice(0,i);c.appendChild(mkBtn(q,()=>{pkPath=q;pkRender()},i===pkPath.length))}
+  d.innerHTML='';d.appendChild(mkBtn('เหล่า ทบ. (17)',()=>{pkBr=true;pkRender()},pkBr));
+  Object.keys(DIMS).forEach(k=>d.appendChild(mkBtn(DIMS[k][0],()=>{pkBr=false;pkDim=k;pkPath='';pkRender()},!pkBr&&k===pkDim)));
+  c.innerHTML='';if(!pkBr)c.appendChild(mkBtn('ทั้งหมด',()=>{pkPath='';pkRender()}));
+  for(let i=1;i<=pkPath.length&&!pkBr;i++){const q=pkPath.slice(0,i);c.appendChild(mkBtn(q,()=>{pkPath=q;pkRender()},i===pkPath.length))}
   if(typeof ms==='undefined'){g.textContent='โหลดไลบรารีสัญลักษณ์ไม่สำเร็จ ตรวจอินเทอร์เน็ตแล้วรีเฟรช';return}
   const tile=(label,code,rep,onclick,on)=>{
     const b=document.createElement('button');b.className='tile'+(on?' on':'');
     b.innerHTML='<div class="sym">'+symSvg('S'+$('aff').value+pkDim+'P'+pad6(rep)+'--'+'---',34)+'</div>'+esc(label);
     b.onclick=onclick;return b;
   };
+  if(pkBr){
+    g.innerHTML='';
+    BRALL.forEach((b,idx)=>{
+      const bt=document.createElement('button'),code=brCode(b);
+      bt.className='tile'+(!symPick&&$('utype').selectedIndex===idx?' on':'');
+      bt.innerHTML='<div class="sym">'+symSvg('S'+$('aff').value+'GP'+code+'--'+'---',34)+'</div>'+esc((b[1]?b[1]+' ':'')+b[0]+(brOk(b)?'':' *'));
+      bt.onclick=()=>{$('utype').selectedIndex=idx;symPick=null;brChanged();updatePrev();pkRender()};
+      g.appendChild(bt);
+    });
+    return;
+  }
   g.innerHTML='กำลังโหลดรายการ...';
   setTimeout(()=>{
     if(tok!==pkTok)return;
@@ -440,19 +475,21 @@ function pkRender(){
   },20);
 }
 // ---------- save / load ----------
-const dump=()=>({items:items.map(i=>({t:i.type,s:i.sidc,n:i.name,f:i.fan||undefined,p:i.m.getLngLat().toArray()})),lines,fd:DEF});
+const dump=()=>({items:items.map(i=>({t:i.type,s:i.sidc,n:i.name,f:i.fan||undefined,z:i.sz,q:i.op,p:i.m.getLngLat().toArray()})),lines,fd:DEF,sd:SYM,ld:DEFL});
 function save(){try{localStorage.setItem('sit',JSON.stringify(dump()))}catch(e){}}
 function load(d){
-  items.forEach(i=>i.m.remove());items=[];sel=[];selUi();lines=d.lines||[];
+  items.forEach(i=>i.m.remove());items=[];sel=[];selUi();lines=d.lines||[];selLine=null;
   if(d.fd)Object.assign(DEF,d.fd);
-  (d.items||[]).forEach(o=>{if(T[o.t])add(o.t,o.p[0],o.p[1],{sidc:o.s,name:o.n,fan:o.f})});
-  drawLines();rings();save();
+  if(d.sd)Object.assign(SYM,d.sd);
+  if(d.ld)Object.assign(DEFL,d.ld);
+  (d.items||[]).forEach(o=>{if(T[o.t])add(o.t,o.p[0],o.p[1],{sidc:o.s,name:o.n,fan:o.f,sz:o.z,op:o.q})});
+  drawLines();rings();styleUI();fanUI();save();
 }
 
 // ---------- range rings ----------
 const isGun=i=>i.type==='gun'||(i.sidc&&i.sidc.slice(4,8)==='UCFH');
 // ---- FAN ----
-const DEF={az:0,w:1600,min:1,max:10};
+const DEF={az:0,w:1600,min:1,max:10,col:'#f59e0b',fo:0.2,lo:0.9};
 const fanOf=i=>i.fan||DEF;
 const m2d=m=>m*360/6400;
 function dest(c,brgDeg,km){
@@ -479,8 +516,8 @@ function rings(){
   items.filter(isGun).forEach(i=>{
     const c=i.m.getLngLat().toArray(),f=fanOf(i);
     if(!(f.max>0))return;
-    F.push({type:'Feature',properties:{k:'fan'},geometry:{type:'Polygon',coordinates:fanPoly(c,{az:f.az,w:f.w,max:f.max,min:Math.min(f.min,f.max)})}});
-    F.push({type:'Feature',properties:{k:'axis'},geometry:{type:'LineString',coordinates:[c,dest(c,m2d(f.az),f.max)]}});
+    F.push({type:'Feature',properties:{k:'fan',c:f.col||DEF.col,fo:f.fo??DEF.fo,lo:f.lo??DEF.lo},geometry:{type:'Polygon',coordinates:fanPoly(c,{az:f.az,w:f.w,max:f.max,min:Math.min(f.min,f.max)})}});
+    F.push({type:'Feature',properties:{k:'axis',c:f.col||DEF.col,fo:f.fo??DEF.fo,lo:f.lo??DEF.lo},geometry:{type:'LineString',coordinates:[c,dest(c,m2d(f.az),f.max)]}});
   });
   src.setData({type:'FeatureCollection',features:F});
 }
@@ -495,7 +532,7 @@ function fanUI(){
 function fanEdit(){
   const v={az:((fromU(+$('faz').value||0)%6400)+6400)%6400,w:Math.max(0,Math.min(6400,fromU(+$('fw').value||0))),min:Math.max(0,+$('rmin').value||0),max:Math.max(0,+$('rmax').value||0)};
   const gs=selGuns();
-  if(gs.length)gs.forEach(i=>{i.fan={...v}});else Object.assign(DEF,v);
+  if(gs.length)gs.forEach(i=>{i.fan={...fanOf(i),...v}});else Object.assign(DEF,v);
   rings();save();
 }
 ['faz','fw','rmin','rmax'].forEach(id=>{$(id).oninput=fanEdit});
@@ -516,16 +553,16 @@ $('faim').onclick=()=>{
 // ---------- lines ----------
 function drawLines(){
   const src=map.getSource('lines');if(!src)return;
-  const F=lines.map(l=>({type:'Feature',properties:{c:l.c,d:l.d},geometry:{type:'LineString',coordinates:l.p}}));
-  if(cur.length>1)F.push({type:'Feature',properties:{c:$('lcol').value,d:$('ldash').value},geometry:{type:'LineString',coordinates:cur}});
+  const F=lines.map((l,i)=>({type:'Feature',properties:{c:l.c,d:l.d||'',o:l.o??1,w:l.w??3.5,i},geometry:{type:'LineString',coordinates:l.p}}));
+  if(cur.length>1)F.push({type:'Feature',properties:{c:DEFL.c,d:DEFL.d,o:DEFL.o,w:DEFL.w,i:-1},geometry:{type:'LineString',coordinates:cur}});
   src.setData({type:'FeatureCollection',features:F});
+  if(map.getLayer('lines-sel'))map.setFilter('lines-sel',['==',['get','i'],selLine===null?-2:selLine]);
 }
 $('lend').onclick=()=>{
-  if(cur.length>1){lines.push({p:cur,c:$('lcol').value,d:$('ldash').value});save()}
+  if(cur.length>1){lines.push({p:cur,c:DEFL.c,o:DEFL.o,w:DEFL.w,d:DEFL.d});save()}
   cur=[];drawLines();say('จบเส้นแล้ว');
 };
-$('lundo').onclick=()=>{cur.length?cur.pop():lines.pop();save();drawLines()};
-$('lcol').onchange=drawLines;$('ldash').onchange=drawLines;
+$('lundo').onclick=()=>{cur.length?cur.pop():lines.pop();selLine=null;save();drawLines();styleUI()};
 
 // ---------- line of sight ----------
 function clearLos(){map.getSource('los')?.setData(empty)}
@@ -595,7 +632,12 @@ map.on('click',e=>{
   if(mode==='line'){cur.push(p);drawLines()}
   else if(mode==='unit')add('unit',p[0],p[1],{sidc:unitSidc(),name:$('uname').value.trim()});
   else if(mode)add(mode,p[0],p[1]);
-  else setProbe(p[0],p[1]);
+  else{
+    const f=map.queryRenderedFeatures([[e.point.x-9,e.point.y-9],[e.point.x+9,e.point.y+9]],{layers:['lines-s','lines-d']});
+    if(f.length){selLine=f[0].properties.i;drawLines();styleUI();say('เลือกเส้นแล้ว ปรับสี ความโปร่งแสง ความหนาได้ที่ปุ่ม สี/ขนาด');return}
+    if(selLine!==null){selLine=null;drawLines();styleUI()}
+    setProbe(p[0],p[1]);
+  }
 });
 $('grid').onclick=()=>{gridOn=!gridOn;$('grid').classList.toggle('on',gridOn);drawGrid();saveView();if(gridOn)say('เปิดเส้นกริด UTM (WGS84) ตัวเลขที่ขอบคือหลักกริด เส้นหนา = ทุก 10 ช่อง')};
 $('gsp').onchange=()=>{drawGrid();saveView()};
@@ -649,6 +691,57 @@ $('imp').onchange=e=>{
   r.readAsText(f);e.target.value='';
 };
 
+
+// ---------- 17 เหล่า กองทัพบก ----------
+// [ชื่อเหล่า, อักษรย่อ, อังกฤษ, รหัสไอคอนมาตรฐาน APP-6/2525 (ตัวเลือก เรียงตามลำดับ)]
+const BRALL=[
+  ['ทหารราบ','ร.','Infantry',['UCI']],
+  ['ทหารม้า','ม.','Cavalry',['UCA','UCRV']],
+  ['ทหารปืนใหญ่','ป.','Artillery',['UCFH']],
+  ['ทหารช่าง','ช.','Engineer',['UCE']],
+  ['ทหารสื่อสาร','ส.','Signal',['UUS']],
+  ['ทหารขนส่ง','ขส.','Transportation',['UST']],
+  ['ทหารสรรพาวุธ','สพ.','Ordnance',['USX']],
+  ['ทหารพลาธิการ','พธ.','Quartermaster',['USS']],
+  ['ทหารสารวัตร','สห.','Military Police',['UULM','UUL']],
+  ['ทหารสารบรรณ','สบ.','Adjutant General',['USA']],
+  ['ทหารการเงิน','กง.','Finance',['USAF']],
+  ['ทหารพระธรรมนูญ','ธน.','Judge Advocate',['USAJ']],
+  ['ทหารแพทย์','พ.','Medical',['USM']],
+  ['ทหารแผนที่','ผท.','Topographic',['UUT']],
+  ['ทหารการสัตว์','กส.','Veterinary',['USMV']],
+  ['ทหารดุริยางค์','ดย.','Band',[]],
+  ['ทหารการข่าว','ขว.','Intelligence',['UUM']],
+  ['ต่อสู้อากาศยาน','ปตอ.','Air Defense',['UCD']],
+  ['การบินทหารบก','','Army Aviation',['UCV']],
+  ['ลาดตระเวน','','Reconnaissance',['UCR']]
+];
+const ABS=BRALL.map(b=>b[1]).filter(Boolean);
+// เลือกไอคอนแรกที่ไลบรารีวาดได้จริง ถ้าไม่มีใช้กรอบหน่วยทั่วไป
+function brCode(b){
+  if(typeof ms==='undefined')return pad6(b[3][0]||'U');
+  const base=sig('G','U');
+  for(const c of b[3])if(sig('G',c)!==base)return pad6(c);
+  return 'U-----';
+}
+const brOk=b=>brCode(b)!=='U-----';
+function buildBr(){
+  const s=$('utype');s.innerHTML='';
+  const g1=document.createElement('optgroup'),g2=document.createElement('optgroup');
+  g1.label='17 เหล่า กองทัพบก';g2.label='อื่นๆ';
+  BRALL.forEach((b,i)=>{
+    const o=document.createElement('option');o.value=brCode(b);
+    o.textContent=(b[1]?b[1]+' ':'')+b[0]+(brOk(b)?'':' *');
+    (i<17?g1:g2).appendChild(o);
+  });
+  s.appendChild(g1);s.appendChild(g2);
+}
+function brChanged(){
+  const b=BRALL[$('utype').selectedIndex],u=$('uname');
+  if(b&&b[1]&&(!u.value||ABS.includes(u.value)))u.value=b[1];
+}
+buildBr();
+
 // ---------- ตัวเลือกสัญลักษณ์ทั้งหมด ----------
 $('bpk').onclick=()=>{$('pk').hidden=false;pkRender();updatePrev()};
 $('pkclose').onclick=()=>{$('pk').hidden=true};
@@ -656,11 +749,12 @@ $('pkok').onclick=()=>{$('pk').hidden=true;updatePrev();setMode('unit')};
 $('bpkx').onclick=()=>{symPick=null;$('sidc').value='';updatePrev()};
 ['aff','ech','sidc'].forEach(i=>$(i).addEventListener('input',updatePrev));
 ['aff','ech'].forEach(i=>$(i).addEventListener('change',()=>{updatePrev();if(!$('pk').hidden)pkRender()}));
-$('utype').addEventListener('change',()=>{symPick=null;updatePrev()});
+$('utype').addEventListener('change',()=>{symPick=null;brChanged();updatePrev()});
+$('bbr').onclick=()=>{pkBr=true;$('pk').hidden=false;pkRender();updatePrev()};
 window.addEventListener('load',updatePrev);
 
 // ---------- แถบเครื่องมือ / ลิ้นชัก ----------
-const DRW={'rb-units':['dr-units','unit'],'rb-points':['dr-points',null],'rb-lines':['dr-lines','line'],'rb-coord':['dr-coord',null],'rb-more':['dr-more',null]};
+const DRW={'rb-units':['dr-units','unit'],'rb-points':['dr-points',null],'rb-lines':['dr-lines','line'],'rb-style':['dr-style',null],'rb-coord':['dr-coord',null],'rb-more':['dr-more',null]};
 function closeDr(){document.querySelectorAll('.dr').forEach(d=>d.hidden=true);Object.keys(DRW).forEach(k=>$(k).classList.remove('on'))}
 Object.keys(DRW).forEach(k=>{
   $(k).onclick=()=>{
@@ -674,6 +768,54 @@ $('pan').addEventListener('click',closeDr);
 $('cardx').onclick=()=>{$('card').hidden=true};
 $('desel').onclick=()=>{sel=[];items.forEach(i=>i.el.firstChild.classList.remove('sel'));selUi();$('card').hidden=true};
 setTimeout(()=>say('แตะแผนที่เพื่อปักหมุดดูพิกัดและความสูง ใช้แถบซ้ายเลือกเครื่องมือ'),300);
+
+// ---------- สี / ความโปร่งแสง / ขนาด ----------
+function styleUI(){
+  const s0=sel[0],sz=s0?(s0.sz||SYM.size):SYM.size,op=s0?(s0.op??SYM.op):SYM.op;
+  $('ssz').value=sz;$('sszv').textContent=sz;$('sop').value=Math.round(op*100);$('sopv').textContent=Math.round(op*100)+'%';
+  $('swho').textContent=sel.length?'แก้สัญลักษณ์ที่เลือก '+sel.length+' รายการ':'ค่าเริ่มต้นของสัญลักษณ์ทั้งหมด (แตะสัญลักษณ์บนแผนที่เพื่อแก้เฉพาะตัว)';
+  const gs=selGuns(),f=gs.length?fanOf(gs[0]):DEF;
+  $('fcol').value=f.col||DEF.col;$('ffo').value=Math.round((f.fo??DEF.fo)*100);$('flo').value=Math.round((f.lo??DEF.lo)*100);
+  $('ffov').textContent=$('ffo').value+'%';$('flov').textContent=$('flo').value+'%';
+  $('fwho').textContent=gs.length?'แก้กรวยยิงที่เลือก '+gs.length+' กระบอก':'ค่าเริ่มต้นของกรวยยิงทุกกระบอก (เลือกอาวุธเพื่อแก้เฉพาะกระบอก)';
+  const has=selLine!==null&&!!lines[selLine],L=has?lines[selLine]:DEFL;
+  $('lcol').value=L.c;$('lop').value=Math.round((L.o??1)*100);$('lw').value=L.w??3.5;$('ldash').value=L.d||'';
+  $('lopv').textContent=$('lop').value+'%';$('lwv').textContent=$('lw').value;
+  $('lwho').textContent=has?'แก้เส้นที่เลือก':'ค่าเริ่มต้นของเส้นที่จะวางใหม่ (แตะเส้นบนแผนที่ในโหมดเลื่อนดูเพื่อเลือกแก้)';
+  $('ldel').hidden=!has;$('lsel').hidden=!has;
+}
+$('ssz').oninput=()=>{
+  const v=+$('ssz').value;
+  if(sel.length)sel.forEach(i=>{i.sz=v;render(i)});else{SYM.size=v;items.forEach(render)}
+  $('sszv').textContent=v;save();
+};
+$('sop').oninput=()=>{
+  const v=+$('sop').value/100;
+  if(sel.length)sel.forEach(i=>{i.op=v;render(i)});else{SYM.op=v;items.forEach(render)}
+  $('sopv').textContent=$('sop').value+'%';save();
+};
+function fanStyle(){
+  const st={col:$('fcol').value,fo:+$('ffo').value/100,lo:+$('flo').value/100},gs=selGuns();
+  if(gs.length)gs.forEach(i=>{i.fan={...fanOf(i),...st}});else Object.assign(DEF,st);
+  $('ffov').textContent=$('ffo').value+'%';$('flov').textContent=$('flo').value+'%';
+  rings();save();
+}
+['fcol','ffo','flo'].forEach(id=>{$(id).oninput=fanStyle});
+function lineStyle(){
+  const st={c:$('lcol').value,o:+$('lop').value/100,w:+$('lw').value,d:$('ldash').value};
+  if(selLine!==null&&lines[selLine])Object.assign(lines[selLine],st);else Object.assign(DEFL,st);
+  $('lopv').textContent=$('lop').value+'%';$('lwv').textContent=$('lw').value;
+  drawLines();save();
+}
+['lcol','lop','lw'].forEach(id=>{$(id).oninput=lineStyle});$('ldash').onchange=lineStyle;
+const SW=['#3b82f6','#ef4444','#facc15','#f8fafc','#22c55e','#111827','#f97316','#a855f7'];
+function mkSw(rowId,inputId,fire){
+  SW.forEach(c=>{const b=document.createElement('button');b.className='sw';b.style.background=c;b.onclick=()=>{$(inputId).value=c;fire()};$(rowId).appendChild(b)});
+}
+mkSw('fsw','fcol',fanStyle);mkSw('lsw','lcol',lineStyle);
+$('ldel').onclick=()=>{if(selLine!==null&&lines[selLine]){lines.splice(selLine,1);selLine=null;save();drawLines();styleUI();say('ลบเส้นแล้ว')}};
+$('lsel').onclick=()=>{selLine=null;drawLines();styleUI()};
+$('tostyle').onclick=()=>{$('rb-style').click()};
 
 // ---------- GPS ----------
 let meM=null;
