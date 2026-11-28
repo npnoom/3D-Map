@@ -58,6 +58,7 @@ input[type=number]{width:64px}
 #card{display:flex;gap:8px;align-items:flex-start;max-width:440px;background:rgba(20,33,26,.92);border:1px solid #3d5c48;border-radius:10px;padding:6px 8px;color:#d1fae5;font-size:12px}
 #info{white-space:pre-line;line-height:1.5}
 @media(max-width:600px){.dr{width:calc(100% - 76px)}}
+.me{width:16px;height:16px;border-radius:50%;background:#2563eb;border:3px solid #fff;box-shadow:0 0 0 2px rgba(37,99,235,.35),0 1px 4px #000a;pointer-events:none}
 .cap{position:absolute;left:50%;top:100%;transform:translateX(-50%);white-space:nowrap;color:#fff;font:600 11px system-ui,sans-serif;text-shadow:0 0 3px #000,0 0 3px #000,0 0 3px #000;pointer-events:none}
 </style>
 </head>
@@ -167,7 +168,9 @@ map.addControl(new maplibregl.GeolocateControl({positionOptions:{enableHighAccur
 const empty={type:'FeatureCollection',features:[]};
 map.on('load',()=>{
   map.setTerrain({source:'dem',exaggeration:ex});
-  ['rings','los','lines','grid'].forEach(s=>map.addSource(s,{type:'geojson',data:empty}));
+  ['rings','los','lines','grid','me'].forEach(s=>map.addSource(s,{type:'geojson',data:empty}));
+  map.addLayer({id:'me-acc',type:'fill',source:'me',paint:{'fill-color':'#3b82f6','fill-opacity':0.15}});
+  map.addLayer({id:'me-acc-l',type:'line',source:'me',paint:{'line-color':'#60a5fa','line-width':1.5}});
   map.addLayer({id:'grid-a',type:'line',source:'grid',paint:{'line-color':'#fde047','line-opacity':0.6,'line-width':['case',['get','m'],2.2,1]}});
   map.addLayer({id:'ring-max',type:'line',source:'rings',filter:['==',['get','k'],'max'],paint:{'line-color':'#f59e0b','line-width':2.5}});
   map.addLayer({id:'ring-min',type:'line',source:'rings',filter:['==',['get','k'],'min'],paint:{'line-color':'#fde68a','line-width':2,'line-dasharray':[2,2]}});
@@ -601,23 +604,35 @@ $('desel').onclick=()=>{sel=[];items.forEach(i=>i.el.firstChild.classList.remove
 setTimeout(()=>say('แตะแผนที่เพื่อปักหมุดดูพิกัดและความสูง ใช้แถบซ้ายเลือกเครื่องมือ'),300);
 
 // ---------- GPS ----------
+let meM=null;
+function showMe(c){
+  const ll=[c.longitude,c.latitude];
+  if(!meM){const el=document.createElement('div');el.className='me';meM=new maplibregl.Marker({element:el}).setLngLat(ll).addTo(map)}
+  else meM.setLngLat(ll);
+  map.getSource('me')?.setData({type:'FeatureCollection',features:[{type:'Feature',properties:{},geometry:{type:'Polygon',coordinates:[circle(ll,Math.max(c.accuracy,1)/1000)]}}]});
+}
 $('gps').onclick=()=>{
   if(!navigator.geolocation)return say('เครื่องนี้ไม่รองรับ GPS');
   if(gpsW!==null){navigator.geolocation.clearWatch(gpsW);gpsW=null}
-  let best=null;const t0=Date.now();
+  let best=null,first=true;const t0=Date.now();
   const done=()=>{
     if(gpsW===null)return;
     navigator.geolocation.clearWatch(gpsW);gpsW=null;
     if(!best)return say('ไม่ได้ตำแหน่ง ลองไปที่โล่งแล้วกดใหม่');
-    const c=best.coords;
-    if(mode==='unit')add('unit',c.longitude,c.latitude,{sidc:unitSidc(),name:$('uname').value.trim()});
-    else add(BASIC.includes(mode)?mode:'own',c.longitude,c.latitude);
-    map.flyTo({center:[c.longitude,c.latitude],zoom:c.accuracy>100?14:16});
-    say('วางที่ตำแหน่งปัจจุบัน  '+mgrs({lat:c.latitude,lng:c.longitude})+'\n'+c.latitude.toFixed(5)+', '+c.longitude.toFixed(5)+'\nคลาดเคลื่อน ±'+Math.round(c.accuracy)+' ม.'+(c.accuracy>50?'\nไม่แม่นพอ ให้ลากสัญลักษณ์ไปจุดที่ถูกต้องบนแผนที่':''));
+    const c=best.coords,pt={lat:c.latitude,lng:c.longitude};
+    let msg='ตำแหน่งของคุณ  '+mgrs(pt)+'\n'+fmt(pt)+'  ±'+Math.round(c.accuracy)+' ม.';
+    if(mode==='unit'){add('unit',c.longitude,c.latitude,{sidc:unitSidc(),name:$('uname').value.trim()});msg='วางหน่วยที่ตำแหน่งปัจจุบัน  '+mgrs(pt)+'\n'+fmt(pt)+'  ±'+Math.round(c.accuracy)+' ม.'}
+    else if(BASIC.includes(mode)){add(mode,c.longitude,c.latitude);msg='วาง'+T[mode][1]+'ที่ตำแหน่งปัจจุบัน  '+mgrs(pt)+'\n'+fmt(pt)+'  ±'+Math.round(c.accuracy)+' ม.'}
+    say(msg+(c.accuracy>50?'\nไม่แม่นพอ ตรวจสิทธิ์ตำแหน่งแม่นยำและออกที่โล่ง':''));
   };
   gpsW=navigator.geolocation.watchPosition(p=>{
-    if(!best||p.coords.accuracy<best.coords.accuracy)best=p;
-    say('กำลังหาตำแหน่ง '+Math.round((Date.now()-t0)/1000)+' วินาที  ดีที่สุด ±'+Math.round(best.coords.accuracy)+' ม.');
+    const c=p.coords;
+    if(!best||c.accuracy<best.coords.accuracy){
+      best=p;showMe(c);
+      map.easeTo({center:[c.longitude,c.latitude],zoom:first?Math.max(map.getZoom(),c.accuracy>100?14:16):map.getZoom(),duration:500});
+      first=false;
+    }
+    say('กำลังหาตำแหน่ง '+Math.round((Date.now()-t0)/1000)+' วินาที  ดีที่สุด ±'+Math.round(best.coords.accuracy)+' ม.\n'+mgrs({lat:best.coords.latitude,lng:best.coords.longitude}));
     if(best.coords.accuracy<=15)done();
   },err=>{
     navigator.geolocation.clearWatch(gpsW);gpsW=null;
